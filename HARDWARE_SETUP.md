@@ -26,6 +26,9 @@ This guide provides the complete hardware wiring, power distribution schematic, 
 > [!CAUTION]
 > **Common Ground Rule**: The Battery Ground (`-`), Buck Converter Ground (`GND`), NodeMCU Ground (`GND`), and TB6612FNG Ground (`GND`) **MUST all be tied together**. If Grounds are not joined, the logic signals float and motors will twitch erratically.
 
+> [!TIP]
+> **Zero-Brownout Capacitor Trick**: When DC gear motors start, their inrush current can cause a momentary voltage dip, resetting the NodeMCU. Add a **100µF to 470µF electrolytic capacitor** directly across `VM` and `GND` on the TB6612FNG driver to buffer motor spikes. Set your Buck Converter output to **5.1V – 5.2V** to ensure the NodeMCU never dips below its 4.7V brownout threshold.
+
 ```text
                [ 2x 18650 Batteries (7.4V - 8.4V) ]
                                │
@@ -122,14 +125,23 @@ Once the car is powered on and the phone stream is active, run the master AI con
 # Activate your project environment
 cd "S:/Kaushalya 2.0/R with CV"
 
+# Optional: Run pre-flight hardware diagnostics check first
+python src/car_controller.py --stream-url "http://192.168.137.1:4747/video" --esp-ip "192.168.137.45" --diagnostics
+
 # Launch Autonomous Vehicle AI Brain
 python src/car_controller.py --stream-url "http://192.168.137.1:4747/video" --esp-ip "192.168.137.45" --conf 0.65
 ```
 
-### 🎮 Live Cockpit HUD Keyboard Controls:
+### 🎮 Live Cockpit HUD Keyboard Controls (v2.0):
 - **`M`** : Toggle between **Autonomous AI Driving** and **Manual Keyboard Driving**.
 - **`SPACE`** : **Instant Emergency Brake** (Immediately stops motors).
 - **`W / A / S / D`** : Steer car manually during Manual mode.
+- **`1 / 2 / 3`** : Real-time Speed Profiles:
+  - `1` : **Speed Limit Mode** (PWM: 450 - Slow and precise for tight tracks)
+  - `2` : **Normal Cruise** (PWM: 700 - Standard autonomous speed)
+  - `3` : **Turbo Mode** (PWM: 920 - High speed straightaways)
+- **`[ / ]`** : **Live Straight-Line Motor Trim** (Adjusts Left/Right speed by $\pm 5\%$ on the fly so car drives dead straight).
+- **`T`** : **90° Turn Calibration Test** (Tests vehicle turn duration instantly).
 - **`+ / -`** : Dynamically increase/decrease sign detection confidence threshold.
 - **`Q / ESC`** : Safely stop car and disconnect camera stream.
 
