@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Archives & Datasets (>100MB GitHub limit)
+Autonomous-Car.zip
+dataset/train/
+dataset/valid/
+dataset/test/
+*.cache
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Operating System files
+Thumbs.db
+.DS_Store
+
+# Training runs (intermediate checkpoints and run logs)
+runs/
+models/last.pt
+models/yolov8*.pt
+models/best_yolov8s.pt
+models/best_yolov8n_backup.pt
+
+# Heavy output video recordings
+outputs/videos/*.mp4
+
+# Retain sample signs and benchmark outputs
+!dataset/sample_signs/

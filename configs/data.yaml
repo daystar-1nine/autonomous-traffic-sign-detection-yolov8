@@ -1,0 +1,17 @@
+# YOLOv8 Dataset Configuration - Autonomous Car Traffic Sign Detection
+# 6-Class Benchmark Dataset
+
+path: ../dataset
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 6
+
+names:
+  0: left_turn
+  1: straight_ahead
+  2: right_turn
+  3: dead_end
+  4: no_entry
+  5: stop

@@ -1,0 +1,104 @@
+[
+  {
+    "image": "sample_0_left_turn.jpg",
+    "detections_count": 1,
+    "detections": [
+      {
+        "class_id": 0,
+        "class_name": "left_turn",
+        "confidence": 0.9669,
+        "bbox_xyxy": [
+          525.71,
+          400.72,
+          633.16,
+          536.45
+        ]
+      }
+    ]
+  },
+  {
+    "image": "sample_1_straight_ahead.jpg",
+    "detections_count": 1,
+    "detections": [
+      {
+        "class_id": 1,
+        "class_name": "straight_ahead",
+        "confidence": 0.9548,
+        "bbox_xyxy": [
+          531.85,
+          417.6,
+          639.69,
+          551.03
+        ]
+      }
+    ]
+  },
+  {
+    "image": "sample_2_right_turn.jpg",
+    "detections_count": 1,
+    "detections": [
+      {
+        "class_id": 2,
+        "class_name": "right_turn",
+        "confidence": 0.9624,
+        "bbox_xyxy": [
+          508.4,
+          398.94,
+          615.33,
+          532.83
+        ]
+      }
+    ]
+  },
+  {
+    "image": "sample_3_dead_end.jpg",
+    "detections_count": 1,
+    "detections": [
+      {
+        "class_id": 3,
+        "class_name": "dead_end",
+        "confidence": 0.9576,
+        "bbox_xyxy": [
+          500.28,
+          401.02,
+          615.66,
+          535.15
+        ]
+      }
+    ]
+  },
+  {
+    "image": "sample_4_no_entry.jpg",
+    "detections_count": 1,
+    "detections": [
+      {
+        "class_id": 4,
+        "class_name": "no_entry",
+        "confidence": 0.9646,
+        "bbox_xyxy": [
+          534.14,
+          428.4,
+          639.79,
+          557.88
+        ]
+      }
+    ]
+  },
+  {
+    "image": "sample_5_stop.jpg",
+    "detections_count": 1,
+    "detections": [
+      {
+        "class_id": 5,
+        "class_name": "stop",
+        "confidence": 0.9685,
+        "bbox_xyxy": [
+          515.65,
+          406.19,
+          621.58,
+          539.68
+        ]
+      }
+    ]
+  }
+]

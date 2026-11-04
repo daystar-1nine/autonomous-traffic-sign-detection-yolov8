@@ -1,0 +1,55 @@
+{
+  "split": "test",
+  "model": "best.pt",
+  "overall": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "mAP50": 0.995,
+    "mAP50_95": 0.9754
+  },
+  "per_class": {
+    "left_turn": {
+      "class_id": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "mAP50": 0.995,
+      "mAP50_95": 0.995
+    },
+    "straight_ahead": {
+      "class_id": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "mAP50": 0.995,
+      "mAP50_95": 0.9451
+    },
+    "right_turn": {
+      "class_id": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "mAP50": 0.995,
+      "mAP50_95": 0.9524
+    },
+    "dead_end": {
+      "class_id": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "mAP50": 0.995,
+      "mAP50_95": 0.9823
+    },
+    "no_entry": {
+      "class_id": 4,
+      "precision": 1.0,
+      "recall": 1.0,
+      "mAP50": 0.995,
+      "mAP50_95": 0.995
+    },
+    "stop": {
+      "class_id": 5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "mAP50": 0.995,
+      "mAP50_95": 0.9826
+    }
+  },
+  "plots_saved_to": "S:\\Kaushalya 2.0\\R with CV\\outputs\\evaluation\\test_yolov8s_benchmarks"
+}
