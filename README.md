@@ -102,12 +102,19 @@ YOLOv8-Traffic-Sign-Detection/
 │
 ├── src/                             # Modular Python engine
 │   ├── __init__.py                  # Package init
+│   ├── car_controller.py            # Master autonomous vehicle AI brain & telemetry
 │   ├── utils.py                     # Device detection, HUD box rendering, helpers
 │   ├── train.py                     # Configurable training pipeline (CLI, resume)
 │   ├── evaluate.py                  # Evaluation & test split benchmark
 │   ├── predict_image.py             # Single / batch image inference
 │   ├── predict_video.py             # Video stream detection with telemetry
 │   └── webcam.py                    # Live webcam, RTSP, DroidCam streaming
+│
+├── firmware/                        # Microcontroller IoT firmware
+│   └── esp8266_car/                 # NodeMCU ESP8266 + TB6612FNG C++ Arduino sketch
+│       └── esp8266_car.ino
+│
+├── HARDWARE_SETUP.md                # Circuit schematics, BOM, pinout & calibration guide
 │
 ├── outputs/                         # Generated inference outputs
 │   ├── predictions/                 # Labeled test images & JSON logs
@@ -177,7 +184,21 @@ Process a video file, draw bounding boxes with confidence, overlay telemetry HUD
 python src/predict_video.py --source dataset/demo_traffic_signs.mp4 --model models/best.pt --output outputs/videos/annotated_demo.mp4 --conf 0.45
 ```
 
-### 3. Live Webcam & Stream Detection (`webcam.py`)
+### 3. Real-Time Autonomous Car Controller (`car_controller.py`)
+Run the master vehicle brain linking the phone camera feed, GPU YOLOv8s inference, distance proximity engine, and NodeMCU ESP8266 motor telemetry:
+
+```bash
+python src/car_controller.py --stream-url "http://192.168.137.1:4747/video" --esp-ip "192.168.137.45" --conf 0.65
+```
+
+**Cockpit Controls:**
+- `M` : Toggle Autonomous Driving ↔ Manual Keyboard Control
+- `SPACE` : Emergency Brake (Instant zero-speed stop)
+- `W / A / S / D` : Manual steering control
+- `+ / -` : Adjust detection threshold (+/- 0.05)
+- Detailed circuit wiring and assembly instructions: [`HARDWARE_SETUP.md`](HARDWARE_SETUP.md).
+
+### 4. Live Webcam & Stream Detection (`webcam.py`)
 Launch real-time camera detection for autonomous car testing:
 
 ```bash
