@@ -4,6 +4,9 @@ Welcome to the **AI-Based Autonomous Traffic Sign Detection Car Project**!
 
 This document is your master roadmap. Whether you are setting up your development computer from scratch or powering on the vehicle for the first time, follow this sequential guide to go from zero to a fully operating autonomous vehicle.
 
+> 💡 **Looking for the master physical execution checklist?**  
+> Check out **[`STEPS_TO_COMPLETE.md`](../STEPS_TO_COMPLETE.md)** for the complete step-by-step physical build, multimeter calibration, firmware flashing, and road testing guide.
+
 ---
 
 ## 🎯 What You Are Building

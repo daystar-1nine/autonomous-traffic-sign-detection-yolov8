@@ -10,6 +10,8 @@
 
 A production-grade, complete robotic vehicle system that transforms an **Android smartphone (Redmi)** into the primary on-device artificial intelligence vision system for an autonomous car. Featuring local **YOLOv8n** on-device neural network detection, spatial sign proximity estimation, sub-3ms wireless UDP communication, and NodeMCU ESP8266 dual-motor control with TB6612FNG. Operates **100% locally** without requiring cloud or internet connectivity.
 
+> 🚀 **Ready to Build & Drive?** Follow the step-by-step physical assembly, firmware flashing, and autonomous testing guide: **[`STEPS_TO_COMPLETE.md`](STEPS_TO_COMPLETE.md)**
+
 ---
 
 ## 📌 Master Architecture & System Highlights
@@ -51,6 +53,7 @@ A production-grade, complete robotic vehicle system that transforms an **Android
 AUTONOMOUS_AI_CAR/
 │
 ├── README.md                          # Primary overview & quickstart (this file)
+├── STEPS_TO_COMPLETE.md               # 🚀 Master Step-by-Step Physical Assembly & Testing Guide
 ├── PROJECT_OVERVIEW.md                # System rationale & technical innovations
 ├── PROJECT_ARCHITECTURE.md            # Three-tier hardware & software architecture
 ├── PROJECT_AUDIT.md                   # Complete baseline system audit
