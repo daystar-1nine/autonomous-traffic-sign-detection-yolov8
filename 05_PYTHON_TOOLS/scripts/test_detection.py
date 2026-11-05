@@ -10,8 +10,10 @@ from pathlib import Path
 import cv2
 from ultralytics import YOLO
 
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from src.utils import get_device, is_valid_sign_box, CLASS_NAMES, CLASS_COLORS
+try:
+    from utils import get_device, is_valid_sign_box, CLASS_NAMES, CLASS_COLORS
+except ImportError:
+    from .utils import get_device, is_valid_sign_box, CLASS_NAMES, CLASS_COLORS
 
 
 def parse_args():

@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 from ultralytics import YOLO
 
-# Add root to sys.path
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from src.utils import is_valid_sign_box, CLASS_NAMES
+# Import from 02_AI_MODEL.scripts.utils
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "02_AI_MODEL" / "scripts"))
+from utils import is_valid_sign_box, CLASS_NAMES
 
 
 def test_model_loading_and_inference():

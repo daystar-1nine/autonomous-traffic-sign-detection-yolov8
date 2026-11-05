@@ -12,8 +12,10 @@ import numpy as np
 import torch
 from ultralytics import YOLO
 
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from src.utils import get_device
+try:
+    from utils import get_device
+except ImportError:
+    from .utils import get_device
 
 
 def parse_args():

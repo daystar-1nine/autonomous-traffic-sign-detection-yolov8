@@ -54,17 +54,10 @@ AUTONOMOUS_AI_CAR/
 │
 ├── README.md                          # Primary overview & quickstart (this file)
 ├── STEPS_TO_COMPLETE.md               # 🚀 Master Step-by-Step Physical Assembly & Testing Guide
-├── PROJECT_OVERVIEW.md                # System rationale & technical innovations
-├── PROJECT_ARCHITECTURE.md            # Three-tier hardware & software architecture
-├── PROJECT_AUDIT.md                   # Complete baseline system audit
-├── EXISTING_CODE_ANALYSIS.md          # Line-by-line legacy defect analysis
-├── MODEL_AUDIT.md                     # Neural network benchmarks & tensor specs
-├── DEPENDENCY_AUDIT.md                # Python, Arduino & Android environment audit
-├── CLEANUP_REPORT.md                  # Archival and directory migration record
-├── TEST_RESULTS.md                    # 15-stage verification & test matrix
-├── FINAL_DELIVERY_REPORT.md           # Engineering handover & certification report
+├── LICENSE                            # MIT Open Source License
+├── requirements.txt                   # Root environment dependencies
 │
-├── 01_DOCUMENTATION/                  # Comprehensive 22-part sequential engineering guide
+├── 01_DOCUMENTATION/                  # Comprehensive 25-part engineering & architecture guides
 │   ├── 01_START_HERE.md               # Beginner's 5-step onboarding guide
 │   ├── 02_HARDWARE_REQUIREMENTS.md    # Hardware checklist & specs
 │   ├── 03_COMPONENTS.md               # Component deep-dive (NodeMCU, TB6612, TT Motors)
@@ -86,19 +79,23 @@ AUTONOMOUS_AI_CAR/
 │   ├── 19_TESTING_GUIDE.md            # Unit, bench & floor track tests
 │   ├── 20_TROUBLESHOOTING.md          # Symptom, root-cause & fix matrix
 │   ├── 21_FAQ.md                      # Frequently asked questions
-│   └── 22_FINAL_CHECKLIST.md          # Pre-flight sign-off checklist
+│   ├── 22_FINAL_CHECKLIST.md          # Pre-flight sign-off checklist
+│   ├── PROJECT_OVERVIEW.md            # System rationale & technical innovations
+│   ├── PROJECT_ARCHITECTURE.md        # Three-tier hardware & software architecture
+│   └── IMPLEMENTATION_PLAN.md         # Full project execution roadmap
 │
-├── 02_AI_MODEL/                       # Deep learning models & export tools
-│   ├── dataset/ (data.yaml, classes)  # 6,000-image dataset (4200 train / 1200 val / 600 test)
+├── 02_AI_MODEL/                       # Deep learning models, dataset configs & exports
+│   ├── dataset/ (data.yaml, classes)  # Dataset definition and class mappings
+│   ├── notebooks/                     # YOLOv8_Traffic_Sign_Detection.ipynb
 │   ├── scripts/                       # train.py, evaluate.py, export_model.py, benchmark.py
-│   ├── weights/                       # best_yolov8n.pt (Primary), best_yolov8s.pt
-│   ├── exports/                       # best_yolov8n.onnx (Opset 18 validated)
+│   ├── weights/                       # best_yolov8n.pt (Primary Mobile), best_yolov8s.pt
+│   ├── exports/                       # yolov8n_traffic_signs.onnx
 │   └── requirements.txt
 │
 ├── 03_ANDROID_APP/                    # Native Android Studio Kotlin Project
 │   ├── app/src/main/
 │   │   ├── AndroidManifest.xml        # Camera & Wi-Fi permissions
-│   │   ├── assets/                    # yolov8n.tflite model file
+│   │   ├── assets/                    # yolov8n_traffic_signs.onnx / tflite models
 │   │   ├── java/com/autonomous/aicontrol/
 │   │   │   ├── MainActivity.kt        # CameraX binding & lifecycle
 │   │   │   ├── ai/                    # YoloDetector.kt (TFLite tensor decoding & NMS)
@@ -116,21 +113,38 @@ AUTONOMOUS_AI_CAR/
 │   └── README.md
 │
 ├── 05_PYTHON_TOOLS/                   # PC Development, Simulation & Diagnostic Suite
-│   ├── scripts/                       # validate_dataset.py, compare_models.py, test_communication.py,
+│   ├── scripts/                       # predict_image.py, predict_video.py, webcam.py,
+│   │                                  # validate_dataset.py, compare_models.py, test_communication.py,
 │   │                                  # test_camera.py, test_detection.py, pc_telemetry_hud.py
+│   ├── test_images/                   # Sample test images
 │   ├── requirements.txt
 │   └── README.md
 │
 ├── 06_TESTING/                        # Automated Verification Test Suite
-│   ├── model_tests/                   # test_model_inference.py (Verified 100% PASS)
-│   ├── integration_tests/             # test_decision_engine.py (Verified 100% PASS)
-│   ├── communication_tests/           # test_udp_mock.py (Verified 100% PASS)
-│   └── hardware_tests/
+│   ├── model_tests/                   # test_model_inference.py (100% PASS)
+│   ├── integration_tests/             # test_decision_engine.py (100% PASS)
+│   └── communication_tests/           # test_udp_mock.py (100% PASS)
 │
-└── 07_REPORTS/                        # Technical Performance Reports
-    ├── MODEL_BENCHMARK.md             # Empirical test split accuracy & FLOPs
-    ├── PERFORMANCE_REPORT.md          # 41.8ms end-to-end latency budget
-    └── FINAL_TEST_REPORT.md           # Engineering verification certification
+├── 07_REPORTS/                        # Technical Performance & Audit Reports
+│   ├── PROJECT_AUDIT.md               # Complete initial technical audit
+│   ├── EXISTING_CODE_ANALYSIS.md      # Line-by-line legacy defect analysis
+│   ├── MODEL_AUDIT.md                 # Neural network benchmark & tensor specs
+│   ├── DEPENDENCY_AUDIT.md            # Python, Arduino & Android environment audit
+│   ├── DATASET_AUDIT.md               # Dataset & annotation audit
+│   ├── CLEANUP_REPORT.md              # File reorganization & migration record
+│   ├── TEST_RESULTS.md                # 15-stage verification & test matrix
+│   ├── FINAL_DELIVERY_REPORT.md       # Engineering handover & certification report
+│   ├── MODEL_BENCHMARK.md             # Empirical test split accuracy & FLOPs
+│   ├── PERFORMANCE_REPORT.md          # 41.8ms end-to-end latency budget
+│   ├── FINAL_TEST_REPORT.md           # Engineering verification certification
+│   ├── evaluation/                    # Confusion matrices, F1 & PR curves, training logs
+│   ├── predictions/                   # Annotated prediction images & JSON summaries
+│   └── videos/                        # Annotated demonstration videos
+│
+├── dataset/                           # Full 6,000-image dataset (train / valid / test)
+│   └── sample_signs/                  # High-res sample signs for printing/testing
+│
+└── _archive/                          # Historical backups & legacy raw materials
 ```
 
 ---
@@ -144,24 +158,9 @@ Open [`04_ESP8266_FIRMWARE/esp8266_firmware.ino`](04_ESP8266_FIRMWARE/esp8266_fi
 Open [`03_ANDROID_APP`](03_ANDROID_APP) in Android Studio, connect your Redmi phone via USB, and click **Run 'app'**.
 
 ### Step 3: Connect & Drive
-Connect your phone's Wi-Fi to **`AutonomousCar_AP`** (Password: `12345678`). Launch the app and tap **AUTO MODE** to start autonomous driving!
+Connect your phone's Wi-Fi to **`AutonomousCar_AP`** (Password: `car12345678`). Launch the app and tap **AUTO MODE** to start autonomous driving!
 
-For detailed wiring and assembly, read [`01_DOCUMENTATION/01_START_HERE.md`](01_DOCUMENTATION/01_START_HERE.md).
-│   ├── videos/                      # Annotated MP4 output videos
-│   └── evaluation/                  # Confusion matrix, PR curves, logs
-│       └── test_split_benchmarks/   # Full 600-image test benchmark plots
-│
-├── notebooks/
-│   └── YOLOv8_Traffic_Sign_Detection.ipynb  # End-to-end Google Colab notebook
-│
-├── Autonomous-Car.zip               # Master source archive backup
-├── original_colab_code.pdf          # Historical Colab workflow reference
-├── requirements.txt                 # Pinned dependencies
-├── PROJECT_AUDIT.md                 # Complete system audit report
-├── DATASET_AUDIT.md                 # Deep dataset & annotation audit
-├── IMPLEMENTATION_PLAN.md           # Execution roadmap & architecture
-└── README.md                        # Documentation (this file)
-```
+For detailed wiring, multimeter voltage calibration, and assembly, read **[`STEPS_TO_COMPLETE.md`](STEPS_TO_COMPLETE.md)** and [`01_DOCUMENTATION/01_START_HERE.md`](01_DOCUMENTATION/01_START_HERE.md).
 
 ---
 

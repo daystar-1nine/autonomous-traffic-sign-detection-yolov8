@@ -9,8 +9,10 @@ import sys
 from pathlib import Path
 from ultralytics import YOLO
 
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from src.utils import get_device, CLASS_NAMES
+try:
+    from utils import get_device, CLASS_NAMES
+except ImportError:
+    from .utils import get_device, CLASS_NAMES
 
 
 def parse_args():

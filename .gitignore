@@ -46,6 +46,11 @@ models/last.pt
 models/yolov8*.pt
 models/best_yolov8s.pt
 models/best_yolov8n_backup.pt
+# Archived legacy runs and raw bundles
+_archive/runs/
+_archive/Autonomous-Car.zip
+_archive/legacy_models/
+_archive/legacy_src/__pycache__/
 outputs/videos/*.mp4
 
 # Retain sample signs and benchmark outputs

@@ -29,16 +29,24 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-# Add project root to sys.path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from src.utils import (
-    get_device,
-    get_project_root,
-    load_model,
-    is_valid_sign_box,
-    CLASS_NAMES,
-    CLASS_COLORS,
-)
+try:
+    from utils import (
+        get_device,
+        get_project_root,
+        load_model,
+        is_valid_sign_box,
+        CLASS_NAMES,
+        CLASS_COLORS,
+    )
+except ImportError:
+    from .utils import (
+        get_device,
+        get_project_root,
+        load_model,
+        is_valid_sign_box,
+        CLASS_NAMES,
+        CLASS_COLORS,
+    )
 
 
 class DualProtocolCarClient:
