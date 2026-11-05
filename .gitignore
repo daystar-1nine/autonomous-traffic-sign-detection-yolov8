@@ -3,12 +3,26 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Large Archives & Datasets (>100MB GitHub limit)
+# Large Archives & Raw Datasets (>100MB GitHub limit)
 Autonomous-Car.zip
 dataset/train/
 dataset/valid/
 dataset/test/
+02_AI_MODEL/dataset/train/
+02_AI_MODEL/dataset/valid/
+02_AI_MODEL/dataset/test/
 *.cache
+
+# Android Build Directories
+03_ANDROID_APP/.gradle/
+03_ANDROID_APP/build/
+03_ANDROID_APP/app/build/
+03_ANDROID_APP/local.properties
+.cxx/
+
+# Embedded PlatformIO Builds
+.pio/
+.pioenvs/
 
 # Virtual Environments
 venv/
@@ -32,9 +46,8 @@ models/last.pt
 models/yolov8*.pt
 models/best_yolov8s.pt
 models/best_yolov8n_backup.pt
-
-# Heavy output video recordings
 outputs/videos/*.mp4
 
 # Retain sample signs and benchmark outputs
 !dataset/sample_signs/
+!02_AI_MODEL/dataset/sample_signs/

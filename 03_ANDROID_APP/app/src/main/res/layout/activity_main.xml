@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <!-- Camera Preview Stream -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Transparent Sci-Fi Cockpit HUD Canvas -->
+    <com.autonomous.aicontrol.ui.OverlayView
+        android:id="@+id/overlayView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Top Telemetry Panel -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#CC0A0F14"
+        android:padding="8dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="AUTONOMOUS VEHICLE AI VISION BRAIN"
+            android:textColor="@color/hud_cyan"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvFps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:text="FPS: 0.0"
+            android:textColor="@color/white"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvInference"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:text="AI: 0.0ms"
+            android:textColor="@color/hud_yellow"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvCarStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CAR: AP 192.168.4.1"
+            android:textColor="@color/hud_green"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Bottom Controls & Action Bar -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#D90A0F14"
+        android:padding="10dp"
+        android:gravity="center_vertical"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Vehicle Action Display -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvCurrentAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ACTION: CRUISING FORWARD"
+                android:textColor="@color/hud_green"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSignInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DETECTED: None | ZONE: CLEAR"
+                android:textColor="@color/white"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Mode Toggle Button -->
+        <Button
+            android:id="@+id/btnToggleMode"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginEnd="10dp"
+            android:text="AUTO MODE"
+            android:backgroundTint="@color/hud_cyan"
+            android:textColor="@color/black"
+            android:textSize="11sp" />
+
+        <!-- Emergency Brake Button -->
+        <Button
+            android:id="@+id/btnEmergencyStop"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="EMERGENCY STOP"
+            android:backgroundTint="@color/hud_red"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

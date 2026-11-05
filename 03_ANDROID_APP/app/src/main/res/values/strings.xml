@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Autonomous AI Car</string>
+    <string name="title_hud">AUTONOMOUS VEHICLE AI VISION COCKPIT</string>
+    <string name="mode_auto">MODE: AUTONOMOUS</string>
+    <string name="mode_manual">MODE: MANUAL</string>
+    <string name="btn_emergency_stop">EMERGENCY STOP</string>
+    <string name="btn_toggle_mode">TOGGLE AUTO/MANUAL</string>
+    <string name="status_connected">CAR STATUS: CONNECTED</string>
+    <string name="status_disconnected">CAR STATUS: DISCONNECTED</string>
+</resources>

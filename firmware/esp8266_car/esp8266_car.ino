@@ -45,8 +45,8 @@
 // 1 = Connect to Phone/Home Hotspot, 0 = Create Car Access Point
 #define USE_STATION_MODE 1
 
-const char* STA_SSID     = "Your_Hotspot_SSID";     // Put your phone hotspot SSID
-const char* STA_PASSWORD = "Your_Hotspot_Password"; // Put your phone hotspot password
+const char* STA_SSID     = "Gotya";     // Put your phone hotspot SSID
+const char* STA_PASSWORD = "123456788"; // Put your phone hotspot password
 
 const char* AP_SSID      = "AutonomousCar_AP";      // SoftAP Name
 const char* AP_PASSWORD  = "12345678";              // SoftAP Password (min 8 chars)
