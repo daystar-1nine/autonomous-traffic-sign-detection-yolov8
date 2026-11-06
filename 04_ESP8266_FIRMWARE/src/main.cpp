@@ -20,7 +20,7 @@
 const char* AP_SSID      = "AutonomousCar_AP";
 const char* AP_PASSWORD  = "12345678";
 
-const char* STA_SSID     = "RedmiHotspot";
+const char* STA_SSID     = "SamsungHotspot";
 const char* STA_PASSWORD = "carpassword123";
 
 // ------------------- OBJECT INSTANCES ---------------------

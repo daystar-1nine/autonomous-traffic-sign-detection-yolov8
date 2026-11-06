@@ -1,0 +1,6 @@
+left_turn
+straight_ahead
+right_turn
+dead_end
+no_entry
+stop

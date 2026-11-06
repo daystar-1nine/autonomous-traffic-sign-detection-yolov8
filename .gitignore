@@ -48,6 +48,13 @@ models/best_yolov8s.pt
 models/best_yolov8n_backup.pt
 # Archived legacy runs and raw bundles
 _backup_pre_dual_mode/
+_backup_pre_cleanup_20261106/
+
+# Android build outputs
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
 _archive/runs/
 _archive/Autonomous-Car.zip
 _archive/legacy_models/
