@@ -6,7 +6,7 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 
 class UdpVehicleClient(
-    private val espIpAddress: String = "192.168.4.1",
+    var espIpAddress: String = "192.168.4.1",
     private val port: Int = 8888
 ) {
     private var socket: DatagramSocket? = null
@@ -41,6 +41,17 @@ class UdpVehicleClient(
             startHeartbeatAndReceiver()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    fun setTargetIp(newIp: String) {
+        scope.launch {
+            try {
+                espIpAddress = newIp.trim()
+                inetAddress = InetAddress.getByName(espIpAddress)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -86,6 +97,10 @@ class UdpVehicleClient(
             broadcastAddress?.let { bAddr ->
                 s.send(DatagramPacket(data, data.size, bAddr, port))
             }
+            try {
+                val hotspotBroadcast = InetAddress.getByName("192.168.43.255")
+                s.send(DatagramPacket(data, data.size, hotspotBroadcast, port))
+            } catch (ignored: Exception) {}
             isConnected = true
         } catch (e: Exception) {
             isConnected = false
@@ -106,6 +121,10 @@ class UdpVehicleClient(
             broadcastAddress?.let { bAddr ->
                 s.send(DatagramPacket(data, data.size, bAddr, port))
             }
+            try {
+                val hotspotBroadcast = InetAddress.getByName("192.168.43.255")
+                s.send(DatagramPacket(data, data.size, hotspotBroadcast, port))
+            } catch (ignored: Exception) {}
             isConnected = true
         } catch (e: Exception) {
             isConnected = false
@@ -131,6 +150,12 @@ class UdpVehicleClient(
                     socket?.receive(receivePacket)
                     lastPingMs = System.currentTimeMillis() - t0
                     isConnected = true
+
+                    // Auto-lock onto actual ESP IP address from response
+                    if (inetAddress != receivePacket.address) {
+                        inetAddress = receivePacket.address
+                        espIpAddress = receivePacket.address.hostAddress ?: espIpAddress
+                    }
                 } catch (e: Exception) {
                     lastPingMs = -1L
                 }

@@ -198,6 +198,26 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             val newProfile = differentialDrive.cycleSpeedProfile()
             updateProfileUi(newProfile)
         }
+
+        tvCarStatus.setOnClickListener {
+            val input = android.widget.EditText(this).apply {
+                setText(udpClient.espIpAddress)
+                setSingleLine()
+            }
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("ESP8266 Car IP Address")
+                .setMessage("Current: ${udpClient.espIpAddress}\n• SoftAP Default: 192.168.4.1\n• Hotspot: Check phone hotspot client IP (e.g. 192.168.43.x)")
+                .setView(input)
+                .setPositiveButton("Connect") { _, _ ->
+                    val newIp = input.text.toString().trim()
+                    if (newIp.isNotEmpty()) {
+                        udpClient.setTargetIp(newIp)
+                        Toast.makeText(this, "Targeting Car IP: $newIp", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
 
     private fun toggleAutoRunStandby() {
@@ -625,7 +645,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             tvInference.text = "AI: ${dtInference}ms | ORIENT: $orientDesc [Tap]"
 
             val pingText = if (udpClient.isConnected) "${udpClient.lastPingMs}ms" else "DISCONNECTED"
-            tvCarStatus.text = "CAR UDP: $pingText"
+            tvCarStatus.text = "CAR UDP: $pingText [${udpClient.espIpAddress}]"
 
             if (isAutonomous) {
                 if (isAutonomousRunning) {
