@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -49,7 +50,11 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     private lateinit var btnManualMode: Button
     private lateinit var btnAutoMode: Button
+    private lateinit var btnAutoToggleRun: Button
     private lateinit var btnEmergencyStop: Button
+
+    // Autonomous Mode State: false = Standby (Vision active, motors 0), true = Active Driving
+    private var isAutonomousRunning: Boolean = false
 
     // System Components
     private lateinit var cameraExecutor: ExecutorService
@@ -112,6 +117,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
         btnManualMode = findViewById(R.id.btnManualMode)
         btnAutoMode = findViewById(R.id.btnAutoMode)
+        btnAutoToggleRun = findViewById(R.id.btnAutoToggleRun)
         btnEmergencyStop = findViewById(R.id.btnEmergencyStop)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -170,6 +176,10 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             }
         }
 
+        btnAutoToggleRun.setOnClickListener {
+            toggleAutoRunStandby()
+        }
+
         btnEmergencyStop.setOnClickListener {
             modeManager.triggerEmergencyStop("UI Stop Button")
         }
@@ -180,10 +190,32 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         }
     }
 
+    private fun toggleAutoRunStandby() {
+        if (!modeManager.isAutonomous()) return
+
+        isAutonomousRunning = !isAutonomousRunning
+        triggerHapticAlert()
+
+        runOnUiThread {
+            if (isAutonomousRunning) {
+                btnAutoToggleRun.text = "⏸ STANDBY"
+                btnAutoToggleRun.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_orange))
+                Toast.makeText(this, "Mission STARTED (Autonomous Active)", Toast.LENGTH_SHORT).show()
+            } else {
+                btnAutoToggleRun.text = "▶ START"
+                btnAutoToggleRun.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_green))
+                udpClient.sendCommand("STOP", 0)
+                Toast.makeText(this, "Mission on STANDBY (Motors Stopped)", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun updateModeUi(mode: ControlMode) {
         runOnUiThread {
             when (mode) {
                 ControlMode.MANUAL -> {
+                    isAutonomousRunning = false
+                    btnAutoToggleRun.visibility = View.GONE
                     tvModeIndicator.text = "[MODE: MANUAL]"
                     tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_orange))
                     tvCurrentAction.text = "ACTION: MANUAL CONTROLLER ACTIVE"
@@ -192,14 +224,21 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                     btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
                 }
                 ControlMode.AUTONOMOUS -> {
+                    isAutonomousRunning = false
+                    btnAutoToggleRun.visibility = View.VISIBLE
+                    btnAutoToggleRun.text = "▶ START"
+                    btnAutoToggleRun.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_green))
                     tvModeIndicator.text = "[MODE: AUTONOMOUS AI]"
                     tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
-                    tvCurrentAction.text = "ACTION: AI VISION TRACKING"
-                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
+                    tvCurrentAction.text = "AUTO: [STANDBY - MOTORS OFF] TAP START TO DRIVE"
+                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_yellow))
                     btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_cyan))
                     btnManualMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
+                    udpClient.sendCommand("STOP", 0)
                 }
                 ControlMode.EMERGENCY_STOP -> {
+                    isAutonomousRunning = false
+                    btnAutoToggleRun.visibility = View.GONE
                     tvModeIndicator.text = "[EMERGENCY STOP (LOCKED)]"
                     tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_red))
                     tvCurrentAction.text = "ACTION: EMERGENCY BRAKE ENGAGED"
@@ -334,9 +373,13 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 triggerHapticAlert()
             }
             ControllerButtonAction.TOGGLE_CRUISE_CONTROL -> {
-                val active = differentialDrive.toggleCruiseControl()
-                Toast.makeText(this, if (active) "Cruise Control ENGAGED [Speed Locked]" else "Cruise Control CANCELLED", Toast.LENGTH_SHORT).show()
-                triggerHapticAlert()
+                if (modeManager.isAutonomous()) {
+                    toggleAutoRunStandby()
+                } else {
+                    val active = differentialDrive.toggleCruiseControl()
+                    Toast.makeText(this, if (active) "Cruise Control ENGAGED [Speed Locked]" else "Cruise Control CANCELLED", Toast.LENGTH_SHORT).show()
+                    triggerHapticAlert()
+                }
             }
             ControllerButtonAction.DECREASE_SPEED -> {
                 val newProfile = differentialDrive.setSpeedProfileByIndex(
@@ -502,7 +545,11 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
         // 4. Dispatch Wireless UDP Command ONLY when in Autonomous Mode
         if (isAutonomous) {
-            udpClient.sendCommand(decision.command, decision.speed)
+            if (isAutonomousRunning) {
+                udpClient.sendCommand(decision.command, decision.speed)
+            } else {
+                udpClient.sendCommand("STOP", 0)
+            }
         }
 
         // 5. Update Cockpit HUD on UI Thread
@@ -519,13 +566,21 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             tvCarStatus.text = "CAR UDP: $pingText"
 
             if (isAutonomous) {
-                tvCurrentAction.text = "AUTO: ${decision.statusMessage}"
-                tvSignInfo.text = "TARGET: ${decision.targetSignName.uppercase()} | ZONE: ${decision.distanceZone}"
-                tvMotorOutputs.text = "AUTO MOTOR: ${decision.command} @ ${decision.speed} PWM"
-                tvCurrentAction.setTextColor(
-                    if (decision.command == "STOP") ContextCompat.getColor(this, R.color.hud_red)
-                    else ContextCompat.getColor(this, R.color.hud_cyan)
-                )
+                if (isAutonomousRunning) {
+                    tvCurrentAction.text = "AUTO ACTIVE: ${decision.statusMessage}"
+                    tvSignInfo.text = "TARGET: ${decision.targetSignName.uppercase()} | ZONE: ${decision.distanceZone}"
+                    tvMotorOutputs.text = "AUTO MOTOR: ${decision.command} @ ${decision.speed} PWM"
+                    tvCurrentAction.setTextColor(
+                        if (decision.command == "STOP") ContextCompat.getColor(this, R.color.hud_red)
+                        else ContextCompat.getColor(this, R.color.hud_cyan)
+                    )
+                } else {
+                    tvCurrentAction.text = "AUTO: [STANDBY - MOTORS OFF] TAP START TO DRIVE"
+                    val detectedText = if (detections.isNotEmpty()) "${detections[0].className.uppercase()} (${(detections[0].confidence*100).toInt()}%)" else "ROAD CLEAR"
+                    tvSignInfo.text = "VISION: $detectedText | TARGET: ${decision.targetSignName.uppercase()} (READY)"
+                    tvMotorOutputs.text = "AUTO MOTOR: STANDBY (0 PWM)"
+                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_yellow))
+                }
             } else if (modeManager.isManual()) {
                 val detectedText = if (detections.isNotEmpty()) "${detections[0].className.uppercase()} (${(detections[0].confidence*100).toInt()}%)" else "ROAD CLEAR"
                 val radarStatus = if (isForwardObstacleHazard) " [⚠️ COLLISION WARNING: $hazardName]" else " [ADAS: SAFE]"
