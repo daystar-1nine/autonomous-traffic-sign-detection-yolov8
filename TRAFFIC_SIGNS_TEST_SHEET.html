@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traffic Signs Test Sheet - Autonomous AI Car</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #121212;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+  }
+  h1 { color: #00E5FF; margin-bottom: 8px; }
+  p { color: #aaaaaa; margin-top: 0; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 30px auto;
+  }
+  .card {
+    background: #1e1e1e;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 2px solid #333;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    border-color: #00E5FF;
+  }
+  .card img {
+    width: 240px;
+    height: 240px;
+    object-fit: contain;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 15px;
+    text-transform: uppercase;
+  }
+  .badge-stop { background: #FF1744; color: #fff; }
+  .badge-left { background: #00E5FF; color: #000; }
+  .badge-straight { background: #00E676; color: #000; }
+  .badge-right { background: #FF9100; color: #000; }
+  .badge-no-entry { background: #D50000; color: #fff; }
+  .badge-dead-end { background: #FFD600; color: #000; }
+  .action {
+    font-size: 15px;
+    color: #cccccc;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🚗 Traffic Signs Test Gallery</h1>
+<p>Is page ko laptop par open rakhein aur phone ka rear camera screen ke samne karein test karne ke liye!</p>
+
+<div class="grid">
+  <!-- Stop Sign -->
+  <div class="card">
+    <img src="dataset/sample_signs/sample_5_stop.jpg" alt="Stop Sign">
+    <br>
+    <span class="badge badge-stop">1. STOP SIGN</span>
+    <div class="action"><b>Action:</b> Gaadi turant brake lagakar rukegi (Emergency / Regulatory Stop).</div>
+  </div>
+
+  <!-- Left Turn -->
+  <div class="card">
+    <img src="dataset/sample_signs/sample_0_left_turn.jpg" alt="Left Turn">
+    <br>
+    <span class="badge badge-left">2. LEFT TURN</span>
+    <div class="action"><b>Action:</b> Gaadi left wheel slow karke baayein mudegi.</div>
+  </div>
+
+  <!-- Straight Ahead -->
+  <div class="card">
+    <img src="dataset/sample_signs/sample_1_straight_ahead.jpg" alt="Straight Ahead">
+    <br>
+    <span class="badge badge-straight">3. STRAIGHT AHEAD</span>
+    <div class="action"><b>Action:</b> Gaadi seedhe standard speed par aage chalegi.</div>
+  </div>
+
+  <!-- Right Turn -->
+  <div class="card">
+    <img src="dataset/sample_signs/sample_2_right_turn.jpg" alt="Right Turn">
+    <br>
+    <span class="badge badge-right">4. RIGHT TURN</span>
+    <div class="action"><b>Action:</b> Gaadi right wheel slow karke daayein mudegi.</div>
+  </div>
+
+  <!-- No Entry -->
+  <div class="card">
+    <img src="dataset/sample_signs/sample_4_no_entry.jpg" alt="No Entry">
+    <br>
+    <span class="badge badge-no-entry">5. NO ENTRY</span>
+    <div class="action"><b>Action:</b> Obstacle warning - Gaadi aage nahi jaayegi, ruk jayegi.</div>
+  </div>
+
+  <!-- Dead End -->
+  <div class="card">
+    <img src="dataset/sample_signs/sample_3_dead_end.jpg" alt="Dead End">
+    <br>
+    <span class="badge badge-dead-end">6. DEAD END</span>
+    <div class="action"><b>Action:</b> Rasta band hone par gaadi stop karegi.</div>
+  </div>
+</div>
+
+</body>
+</html>
