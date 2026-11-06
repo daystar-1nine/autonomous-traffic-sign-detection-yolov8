@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
- * @brief Autonomous AI Traffic Sign Car - Production ESP8266 Firmware
- * @version 2.0.0
+ * @brief Autonomous AI Traffic Sign Car - Production ESP8266 Dual-Mode Firmware
+ * @version 2.1.0 (Manual Ares Pro + Autonomous AI Vision Dual-Mode)
  */
 
 #include <Arduino.h>
@@ -53,7 +53,8 @@ void setup() {
     delay(300);
 
     Serial.println("\n\n================================================");
-    Serial.println("  AUTONOMOUS AI CAR - ESP8266 FIRMWARE v2.0     ");
+    Serial.println("  AUTONOMOUS AI CAR - ESP8266 FIRMWARE v2.1     ");
+    Serial.println("  DUAL MODE: MANUAL (ARES PRO) + AUTO (AI)      ");
     Serial.println("================================================");
 
     // Initialize Motor Pins & Safe Default State
@@ -98,7 +99,7 @@ void setup() {
     Serial.println("[HTTP] Diagnostic server active on port 80");
 
     watchdog.feed();
-    Serial.println("[SYSTEM] Ready for Autonomous Commands.");
+    Serial.println("[SYSTEM] Ready for Dual-Mode (Manual DRIVE + Auto Action) Commands.");
 }
 
 void loop() {
@@ -106,20 +107,27 @@ void loop() {
     VehicleCommand cmd;
     if (udpServer.parsePacket(cmd)) {
         watchdog.feed();
-        motors.setTrim(cmd.trim);
 
-        if (cmd.action == "FORWARD") {
-            motors.forward(cmd.speed);
-        } else if (cmd.action == "BACKWARD") {
-            motors.backward(cmd.speed);
-        } else if (cmd.action == "LEFT") {
-            motors.turnLeft(cmd.speed);
-        } else if (cmd.action == "RIGHT") {
-            motors.turnRight(cmd.speed);
-        } else if (cmd.action == "STOP") {
-            motors.stop();
-        } else if (cmd.action == "HEARTBEAT") {
-            // Heartbeat only feeds watchdog without altering state
+        if (cmd.isDirectDrive) {
+            // Manual Mode: Differential steering from Cosmic Byte Ares Pro
+            motors.driveDirect(cmd.leftPwm, cmd.rightPwm);
+        } else {
+            // Autonomous Mode: AI Traffic Sign Decisions
+            motors.setTrim(cmd.trim);
+
+            if (cmd.action == "FORWARD") {
+                motors.forward(cmd.speed);
+            } else if (cmd.action == "BACKWARD") {
+                motors.backward(cmd.speed);
+            } else if (cmd.action == "LEFT") {
+                motors.turnLeft(cmd.speed);
+            } else if (cmd.action == "RIGHT") {
+                motors.turnRight(cmd.speed);
+            } else if (cmd.action == "STOP") {
+                motors.stop();
+            } else if (cmd.action == "HEARTBEAT") {
+                // Heartbeat only feeds watchdog without altering state
+            }
         }
     }
 

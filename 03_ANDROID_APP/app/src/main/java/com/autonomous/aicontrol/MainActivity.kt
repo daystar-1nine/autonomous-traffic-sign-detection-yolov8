@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Bundle
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -15,31 +17,52 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.autonomous.aicontrol.ai.YoloDetector
+import com.autonomous.aicontrol.controller.*
 import com.autonomous.aicontrol.decision.DecisionEngine
 import com.autonomous.aicontrol.network.UdpVehicleClient
 import com.autonomous.aicontrol.ui.OverlayView
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeListener {
 
+    // Views
     private lateinit var previewView: PreviewView
     private lateinit var overlayView: OverlayView
+    private lateinit var tvModeIndicator: TextView
+    private lateinit var tvGamepadStatus: TextView
     private lateinit var tvFps: TextView
     private lateinit var tvInference: TextView
     private lateinit var tvCarStatus: TextView
+
+    private lateinit var tvDiagDeviceName: TextView
+    private lateinit var tvDiagLeftStick: TextView
+    private lateinit var tvDiagRightStick: TextView
+    private lateinit var tvDiagTriggers: TextView
+    private lateinit var tvDiagButtons: TextView
+    private lateinit var tvMotorOutputs: TextView
+
     private lateinit var tvCurrentAction: TextView
     private lateinit var tvSignInfo: TextView
-    private lateinit var btnToggleMode: Button
+    private lateinit var tvSpeedProfile: TextView
+
+    private lateinit var btnManualMode: Button
+    private lateinit var btnAutoMode: Button
     private lateinit var btnEmergencyStop: Button
 
+    // System Components
     private lateinit var cameraExecutor: ExecutorService
     private var detector: YoloDetector? = null
     private val decisionEngine = DecisionEngine()
     private val udpClient = UdpVehicleClient("192.168.4.1", 8888)
 
-    private var isManualMode = false
+    // Controller & Drive Managers
+    private lateinit var aresController: AresProController
+    private val differentialDrive = DifferentialDriveController(SpeedProfile.NORMAL)
+    private lateinit var modeManager: ControlModeManager
+
     private var lastFrameTime = System.currentTimeMillis()
+    private var isCameraPipelineReady = false
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -54,17 +77,35 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Bind Views
         previewView = findViewById(R.id.previewView)
         overlayView = findViewById(R.id.overlayView)
+        tvModeIndicator = findViewById(R.id.tvModeIndicator)
+        tvGamepadStatus = findViewById(R.id.tvGamepadStatus)
         tvFps = findViewById(R.id.tvFps)
         tvInference = findViewById(R.id.tvInference)
         tvCarStatus = findViewById(R.id.tvCarStatus)
+
+        tvDiagDeviceName = findViewById(R.id.tvDiagDeviceName)
+        tvDiagLeftStick = findViewById(R.id.tvDiagLeftStick)
+        tvDiagRightStick = findViewById(R.id.tvDiagRightStick)
+        tvDiagTriggers = findViewById(R.id.tvDiagTriggers)
+        tvDiagButtons = findViewById(R.id.tvDiagButtons)
+        tvMotorOutputs = findViewById(R.id.tvMotorOutputs)
+
         tvCurrentAction = findViewById(R.id.tvCurrentAction)
         tvSignInfo = findViewById(R.id.tvSignInfo)
-        btnToggleMode = findViewById(R.id.btnToggleMode)
+        tvSpeedProfile = findViewById(R.id.tvSpeedProfile)
+
+        btnManualMode = findViewById(R.id.btnManualMode)
+        btnAutoMode = findViewById(R.id.btnAutoMode)
         btnEmergencyStop = findViewById(R.id.btnEmergencyStop)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+
+        // Initialize Managers
+        modeManager = ControlModeManager(this)
+        aresController = AresProController(this, this)
 
         // Init Neural Network Detector
         try {
@@ -72,26 +113,12 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "YOLOv8n Neural Engine Ready", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Warning: Model file missing from assets", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Model ready in assets", Toast.LENGTH_SHORT).show()
         }
 
-        // Setup Controls
-        btnToggleMode.setOnClickListener {
-            isManualMode = !isManualMode
-            btnToggleMode.text = if (isManualMode) "MANUAL MODE" else "AUTO MODE"
-            if (isManualMode) {
-                udpClient.sendCommand("STOP", 0)
-            }
-        }
-
-        btnEmergencyStop.setOnClickListener {
-            isManualMode = true
-            btnToggleMode.text = "MANUAL MODE"
-            decisionEngine.emergencyStop()
-            udpClient.emergencyStop()
-            tvCurrentAction.text = "ACTION: EMERGENCY STOP (LOCKED)"
-            Toast.makeText(this, "EMERGENCY BRAKE ENGAGED", Toast.LENGTH_SHORT).show()
-        }
+        setupButtons()
+        updateModeUi(modeManager.currentMode)
+        updateProfileUi(differentialDrive.currentProfile)
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -99,6 +126,209 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
     }
+
+    private fun setupButtons() {
+        btnManualMode.setOnClickListener {
+            if (modeManager.isEmergencyStop()) {
+                modeManager.resetEmergencyStop(ControlMode.MANUAL)
+            } else {
+                modeManager.setManualMode(aresController.isConnected(), "Manual Button Tapped")
+            }
+        }
+
+        btnAutoMode.setOnClickListener {
+            if (modeManager.isEmergencyStop()) {
+                modeManager.resetEmergencyStop(ControlMode.AUTONOMOUS)
+            } else {
+                modeManager.setAutonomousMode(isCameraPipelineReady, "Auto Button Tapped")
+            }
+        }
+
+        btnEmergencyStop.setOnClickListener {
+            modeManager.triggerEmergencyStop("UI Stop Button")
+        }
+
+        tvSpeedProfile.setOnClickListener {
+            val newProfile = differentialDrive.cycleSpeedProfile()
+            updateProfileUi(newProfile)
+        }
+    }
+
+    private fun updateModeUi(mode: ControlMode) {
+        runOnUiThread {
+            when (mode) {
+                ControlMode.MANUAL -> {
+                    tvModeIndicator.text = "[MODE: MANUAL]"
+                    tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_orange))
+                    tvCurrentAction.text = "ACTION: MANUAL CONTROLLER ACTIVE"
+                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_orange))
+                    btnManualMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_orange))
+                    btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
+                }
+                ControlMode.AUTONOMOUS -> {
+                    tvModeIndicator.text = "[MODE: AUTONOMOUS AI]"
+                    tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
+                    tvCurrentAction.text = "ACTION: AI VISION TRACKING"
+                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
+                    btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_cyan))
+                    btnManualMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
+                }
+                ControlMode.EMERGENCY_STOP -> {
+                    tvModeIndicator.text = "[EMERGENCY STOP (LOCKED)]"
+                    tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_red))
+                    tvCurrentAction.text = "ACTION: EMERGENCY BRAKE ENGAGED"
+                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_red))
+                    btnManualMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
+                    btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
+                }
+            }
+        }
+    }
+
+    private fun updateProfileUi(profile: SpeedProfile) {
+        runOnUiThread {
+            tvSpeedProfile.text = "PROFILE: ${profile.displayName} [Press Y / Tap to Cycle]"
+        }
+    }
+
+    // ----------------- CONTROLLER EVENT DISPATCHING -----------------
+
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (aresController.handleMotionEvent(event)) {
+            return true
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            if (aresController.handleKeyDown(event.keyCode, event)) {
+                return true
+            }
+        } else if (event.action == KeyEvent.ACTION_UP) {
+            if (aresController.handleKeyUp(event.keyCode, event)) {
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    // ----------------- CONTROLLER EVENT LISTENER -----------------
+
+    override fun onJoystickMoved(axisX: Float, axisY: Float) {
+        if (modeManager.isManual()) {
+            val outputs = differentialDrive.computeMotorOutputs(axisX, axisY)
+            udpClient.sendDriveCommand(outputs.leftPwm, outputs.rightPwm)
+
+            runOnUiThread {
+                tvMotorOutputs.text = "MOTORS: L: ${outputs.leftPwm} | R: ${outputs.rightPwm} PWM"
+                tvCurrentAction.text = "MANUAL: Throttle ${"%.2f".format(-axisY)} | Steer ${"%.2f".format(axisX)}"
+            }
+        }
+    }
+
+    override fun onButtonActionTriggered(action: ControllerButtonAction) {
+        when (action) {
+            ControllerButtonAction.ENABLE_MANUAL -> {
+                if (modeManager.isEmergencyStop()) {
+                    modeManager.resetEmergencyStop(ControlMode.MANUAL)
+                } else {
+                    modeManager.setManualMode(aresController.isConnected(), "Gamepad Button A")
+                }
+            }
+            ControllerButtonAction.ENABLE_AUTONOMOUS -> {
+                if (modeManager.isEmergencyStop()) {
+                    modeManager.resetEmergencyStop(ControlMode.AUTONOMOUS)
+                } else {
+                    modeManager.setAutonomousMode(isCameraPipelineReady, "Gamepad Button B")
+                }
+            }
+            ControllerButtonAction.EMERGENCY_STOP -> {
+                modeManager.triggerEmergencyStop("Gamepad Button X Pressed")
+            }
+            ControllerButtonAction.CYCLE_SPEED_PROFILE -> {
+                val newProfile = differentialDrive.cycleSpeedProfile()
+                updateProfileUi(newProfile)
+                Toast.makeText(this, "Profile: ${newProfile.displayName}", Toast.LENGTH_SHORT).show()
+            }
+            ControllerButtonAction.DECREASE_SPEED -> {
+                val newProfile = differentialDrive.setSpeedProfileByIndex(
+                    (differentialDrive.currentProfile.ordinal - 1).coerceAtLeast(0)
+                )
+                updateProfileUi(newProfile)
+            }
+            ControllerButtonAction.INCREASE_SPEED -> {
+                val newProfile = differentialDrive.setSpeedProfileByIndex(
+                    (differentialDrive.currentProfile.ordinal + 1).coerceAtMost(SpeedProfile.values().size - 1)
+                )
+                updateProfileUi(newProfile)
+            }
+        }
+    }
+
+    override fun onControllerConnectionChanged(connected: Boolean, deviceName: String) {
+        runOnUiThread {
+            if (connected) {
+                tvGamepadStatus.text = "[GAMEPAD: $deviceName]"
+                tvGamepadStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_green))
+                tvDiagDeviceName.text = "Device: $deviceName (Connected)"
+                Toast.makeText(this, "Ares Pro Connected: $deviceName", Toast.LENGTH_SHORT).show()
+            } else {
+                tvGamepadStatus.text = "[GAMEPAD: DISCONNECTED]"
+                tvGamepadStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_red))
+                tvDiagDeviceName.text = "Device: Disconnected"
+                Toast.makeText(this, "Gamepad Disconnected", Toast.LENGTH_SHORT).show()
+                modeManager.handleControllerDisconnected()
+            }
+        }
+    }
+
+    override fun onDiagnosticsUpdated(diagnosticData: GamepadDiagnosticData) {
+        runOnUiThread {
+            tvDiagLeftStick.text = "L-Stick: X: ${"%.2f".format(diagnosticData.leftStickX)} | Y: ${"%.2f".format(diagnosticData.leftStickY)}"
+            tvDiagRightStick.text = "R-Stick: X: ${"%.2f".format(diagnosticData.rightStickX)} | Y: ${"%.2f".format(diagnosticData.rightStickY)}"
+            tvDiagTriggers.text = "Triggers: LT: ${"%.2f".format(diagnosticData.leftTrigger)} | RT: ${"%.2f".format(diagnosticData.rightTrigger)}"
+
+            val btnStr = if (diagnosticData.activeButtons.isNotEmpty()) {
+                diagnosticData.activeButtons.joinToString(", ")
+            } else {
+                "None"
+            }
+            tvDiagButtons.text = "Buttons: $btnStr"
+        }
+    }
+
+    // ----------------- CONTROL MODE LISTENER -----------------
+
+    override fun onModeChanged(oldMode: ControlMode, newMode: ControlMode, reason: String) {
+        // Immediate Transition Invariant: Halt motors on any mode switch
+        differentialDrive.reset()
+        udpClient.sendDriveCommand(0, 0)
+
+        updateModeUi(newMode)
+        runOnUiThread {
+            Toast.makeText(this, "Mode: $newMode ($reason)", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onEmergencyStopTriggered(source: String) {
+        differentialDrive.reset()
+        decisionEngine.emergencyStop()
+        udpClient.emergencyStop()
+        updateModeUi(ControlMode.EMERGENCY_STOP)
+        runOnUiThread {
+            tvMotorOutputs.text = "MOTORS: L: 0 | R: 0 PWM"
+            Toast.makeText(this, "EMERGENCY STOP ENGAGED ($source)", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onEmergencyStopReset() {
+        runOnUiThread {
+            Toast.makeText(this, "Emergency Stop Cleared. Driving Enabled.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ----------------- CAMERAX & AI INFERENCE -----------------
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -108,7 +338,6 @@ class MainActivity : AppCompatActivity() {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
 
-            // High-Performance Frame Analyzer
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -124,6 +353,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+                isCameraPipelineReady = true
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -141,11 +371,12 @@ class MainActivity : AppCompatActivity() {
         val detections = detector?.detect(bitmap) ?: emptyList()
         val dtInference = System.currentTimeMillis() - t0
 
-        // 2. Update Autonomous Decision Engine
-        val decision = decisionEngine.processDetections(detections, isManualMode)
+        // 2. Evaluate Autonomous Decision Engine
+        val isAutonomous = modeManager.isAutonomous()
+        val decision = decisionEngine.processDetections(detections, manualOverride = !isAutonomous)
 
-        // 3. Dispatch Wireless UDP Command to ESP8266
-        if (!isManualMode) {
+        // 3. Dispatch Wireless UDP Command ONLY when in Autonomous Mode
+        if (isAutonomous) {
             udpClient.sendCommand(decision.command, decision.speed)
         }
 
@@ -162,8 +393,12 @@ class MainActivity : AppCompatActivity() {
             val pingText = if (udpClient.isConnected) "${udpClient.lastPingMs}ms" else "DISCONNECTED"
             tvCarStatus.text = "CAR UDP: $pingText"
 
-            tvCurrentAction.text = "ACTION: ${decision.statusMessage}"
-            tvSignInfo.text = "TARGET: ${decision.targetSignName.uppercase()} | ZONE: ${decision.distanceZone}"
+            if (isAutonomous) {
+                tvCurrentAction.text = "AUTO: ${decision.statusMessage}"
+                tvSignInfo.text = "TARGET: ${decision.targetSignName.uppercase()} | ZONE: ${decision.distanceZone}"
+            } else if (modeManager.isManual()) {
+                tvSignInfo.text = "AI DETECTED: ${if (detections.isNotEmpty()) detections[0].className.uppercase() else "NONE"}"
+            }
         }
     }
 
@@ -183,7 +418,6 @@ class MainActivity : AppCompatActivity() {
         )
         bitmap.copyPixelsFromBuffer(buffer)
 
-        // Rotate if sensor is oriented vertically
         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
         if (rotationDegrees != 0) {
             val matrix = Matrix()
@@ -211,6 +445,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        aresController.release()
         udpClient.close()
         detector?.close()
         cameraExecutor.shutdown()

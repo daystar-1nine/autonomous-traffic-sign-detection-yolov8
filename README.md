@@ -8,41 +8,55 @@
 [![mAP@50](https://img.shields.io/badge/mAP%4050-99.5%25-brightgreen)](07_REPORTS/MODEL_BENCHMARK.md)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A production-grade, complete robotic vehicle system that transforms an **Android smartphone (Redmi)** into the primary on-device artificial intelligence vision system for an autonomous car. Featuring local **YOLOv8n** on-device neural network detection, spatial sign proximity estimation, sub-3ms wireless UDP communication, and NodeMCU ESP8266 dual-motor control with TB6612FNG. Operates **100% locally** without requiring cloud or internet connectivity.
+A production-grade, complete robotic vehicle system that transforms an **Android smartphone (Redmi)** into the central intelligence hub for an autonomous and teleoperated robotic car. Features **Dual-Mode Control**:
+1. **Manual Mode:** Precision wireless teleoperation via **Cosmic Byte Ares Pro Gamepad** (Bluetooth HID) with proportional differential steering, deadband filtering, and slew-rate acceleration.
+2. **Autonomous Mode:** On-device **YOLOv8n** neural network detection, spatial sign proximity estimation, and multi-stage decision state machine.
+3. Sub-3ms wireless UDP communication to a NodeMCU ESP8266 + TB6612FNG dual motor driver. Operates **100% locally** without requiring cloud or internet connectivity.
 
-> 🚀 **Ready to Build & Drive?** Follow the step-by-step physical assembly, firmware flashing, and autonomous testing guide: **[`STEPS_TO_COMPLETE.md`](STEPS_TO_COMPLETE.md)**
+> 🚀 **Ready to Build & Drive?** Follow the step-by-step master execution guide: **[`STEPS_TO_COMPLETE.md`](STEPS_TO_COMPLETE.md)**  
+> 🎮 **Dual-Mode Teleoperation Guide:** See **[`01_DOCUMENTATION/dual_mode/01_DUAL_MODE_OVERVIEW.md`](01_DOCUMENTATION/dual_mode/01_DUAL_MODE_OVERVIEW.md)** and **[`DUAL_MODE_FINAL_REPORT.md`](DUAL_MODE_FINAL_REPORT.md)**.
 
 ---
 
 ## 📌 Master Architecture & System Highlights
 
 ```text
-       ┌─────────────────────────────────────────────────────────┐
-       │             ON-DEVICE MOBILE AI VISION BRAIN            │
-       │           (Android Smartphone on Front Chassis)         │
-       │  • CameraX 1080p @ 30 FPS Stream                        │
-       │  • YOLOv8n TFLite (3.13M params, ~22ms Mobile Latency)  │
-       │  • 6-Stage Spatial & Temporal Decision Engine           │
-       │  • Sci-Fi Cockpit Telemetry HUD                         │
-       └────────────────────────────┬────────────────────────────┘
-                                    │
-                                    ▼ High-Speed UDP Datagrams (Port 8888, <3ms)
-       ┌─────────────────────────────────────────────────────────┐
-       │             EMBEDDED ACTUATION CONTROLLER               │
-       │               (NodeMCU ESP8266 ESP-12E)                 │
-       │  • Private Standalone SoftAP (AutonomousCar_AP)         │
-       │  • Non-blocking Command Parser & 1.0s Watchdog Fail-Safe│
-       │  • Dynamic Wireless Motor Trim & Soft-PWM Ramp          │
-       └────────────────────────────┬────────────────────────────┘
-                                    │
-                                    ▼ MOSFET H-Bridge PWM
-       ┌─────────────────────────────────────────────────────────┐
-       │              POWER & PROPULSION HARDWARE                │
-       │  • TB6612FNG Dual Driver (Zero Voltage Drop, 3.2A peak) │
-       │  • 2x TT DC Gearbox Motors (1:48 Differential Drive)    │
-       │  • 2S 18650 Li-ion Battery Pack (7.4V Nominal, 3A Fuse) │
-       │  • LM2596/Mini360 Buck Converter (Regulated 5.1V Logic) │
-       └─────────────────────────────────────────────────────────┘
+ ┌────────────────────────────────────────────────────────┐
+ │               COSMIC BYTE ARES PRO GAMEPAD             │
+ │   • Bluetooth 5.0 Native Input (Sub-8ms HID Latency)   │
+ │   • Left Stick: Throttle & Differential Steering       │
+ │   • Button A: Manual | Button B: Auto | Button X: STOP │
+ └───────────────────────────┬────────────────────────────┘
+                             │ Bluetooth HID (<8ms)
+                             ▼
+ ┌────────────────────────────────────────────────────────┐
+ │            ON-DEVICE MOBILE AI BRAIN (REDMI)           │
+ │   • AresProController & DifferentialDriveController    │
+ │   • Centralized ControlModeManager (Single Owner Lock) │
+ │   • CameraX 1080p @ 30 FPS Stream                      │
+ │   • YOLOv8n TFLite (3.13M params, ~22ms Latency)       │
+ │   • 6-Stage Spatial & Temporal Decision Engine         │
+ │   • Cockpit Telemetry HUD with Live Gamepad Diagnostic │
+ └───────────────────────────┬────────────────────────────┘
+                             │ High-Speed UDP Datagrams (Port 8888, <3ms)
+                             ▼
+ ┌────────────────────────────────────────────────────────┐
+ │             EMBEDDED ACTUATION CONTROLLER              │
+ │               (NodeMCU ESP8266 ESP-12E)                │
+ │   • Dual-Protocol Parser (CMD:DRIVE & Action Packets)  │
+ │   • Private Standalone SoftAP (AutonomousCar_AP)       │
+ │   • Non-blocking Command Parser & 1.0s Watchdog        │
+ │   • Dynamic Wireless Motor Trim & Soft-PWM Ramp        │
+ └───────────────────────────┬────────────────────────────┘
+                             │ MOSFET H-Bridge PWM (1 kHz)
+                             ▼
+ ┌────────────────────────────────────────────────────────┐
+ │              POWER & PROPULSION HARDWARE               │
+ │   • TB6612FNG Dual Driver (Zero Voltage Drop, 3.2A)    │
+ │   • 2x TT DC Gearbox Motors (1:48 Differential Drive)  │
+ │   • 2S 18650 Li-ion Battery Pack (7.4V Nominal)        │
+ │   • LM2596/Mini360 Buck Converter (Regulated 5.15V)    │
+ └────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -54,10 +68,27 @@ AUTONOMOUS_AI_CAR/
 │
 ├── README.md                          # Primary overview & quickstart (this file)
 ├── STEPS_TO_COMPLETE.md               # 🚀 Master Step-by-Step Physical Assembly & Testing Guide
+├── DUAL_MODE_FINAL_REPORT.md          # 🏁 Dual-Mode Upgrade & Verification Report (Ares Pro + AI)
+├── DUAL_MODE_UPDATE_AUDIT.md          # 📋 Dual-Mode Technical Audit & Architecture Specification
 ├── LICENSE                            # MIT Open Source License
 ├── requirements.txt                   # Root environment dependencies
 │
-├── 01_DOCUMENTATION/                  # Comprehensive 25-part engineering & architecture guides
+├── 01_DOCUMENTATION/                  # Comprehensive engineering, dual-mode & architecture guides
+│   ├── dual_mode/                     # 🎮 14-Part Ares Pro Gamepad & Dual-Mode Master Guides
+│   │   ├── 01_DUAL_MODE_OVERVIEW.md
+│   │   ├── 02_GAMEPAD_SETUP.md
+│   │   ├── 03_BLUETOOTH_PAIRING.md
+│   │   ├── 04_CONTROLLER_BUTTON_MAPPING.md
+│   │   ├── 05_CONTROLLER_CALIBRATION.md
+│   │   ├── 06_MANUAL_MODE_GUIDE.md
+│   │   ├── 07_AUTONOMOUS_MODE_GUIDE.md
+│   │   ├── 08_CONTROL_MODE_MANAGER.md
+│   │   ├── 09_DIFFERENTIAL_DRIVE.md
+│   │   ├── 10_ESP8266_FIRMWARE_UPDATE.md
+│   │   ├── 11_WIFI_COMMUNICATION.md
+│   │   ├── 12_EMERGENCY_STOP.md
+│   │   ├── 13_DUAL_MODE_TESTING.md
+│   │   └── 14_TROUBLESHOOTING.md
 │   ├── 01_START_HERE.md               # Beginner's 5-step onboarding guide
 │   ├── 02_HARDWARE_REQUIREMENTS.md    # Hardware checklist & specs
 │   ├── 03_COMPONENTS.md               # Component deep-dive (NodeMCU, TB6612, TT Motors)
@@ -99,14 +130,16 @@ AUTONOMOUS_AI_CAR/
 │   │   ├── java/com/autonomous/aicontrol/
 │   │   │   ├── MainActivity.kt        # CameraX binding & lifecycle
 │   │   │   ├── ai/                    # YoloDetector.kt (TFLite tensor decoding & NMS)
+│   │   │   ├── controller/            # AresProController.kt, DifferentialDriveController.kt,
+│   │   │   │                          # ControlModeManager.kt, GamepadDiagnosticData.kt
 │   │   │   ├── decision/              # DecisionEngine.kt (Debounce, proximity, cooldown)
 │   │   │   ├── network/               # UdpVehicleClient.kt (Non-blocking datagrams)
 │   │   │   └── ui/                    # OverlayView.kt (Sci-Fi cockpit HUD)
 │   │   └── res/layout/activity_main.xml
 │   └── README.md
 │
-├── 04_ESP8266_FIRMWARE/               # NodeMCU ESP-12E Firmware
-│   ├── src/main.cpp                   # PlatformIO modular source
+├── 04_ESP8266_FIRMWARE/               # NodeMCU ESP-12E Dual-Mode Firmware
+│   ├── src/main.cpp                   # Modular source (CMD:DRIVE + Action commands)
 │   ├── include/                       # pin_config.h, motor_driver.h, udp_protocol.h, watchdog.h
 │   ├── esp8266_firmware.ino           # Standalone 1-click Arduino IDE sketch
 │   ├── platformio.ini                 # PlatformIO configuration
@@ -121,11 +154,14 @@ AUTONOMOUS_AI_CAR/
 │   └── README.md
 │
 ├── 06_TESTING/                        # Automated Verification Test Suite
+│   ├── controller_tests/              # test_differential_drive.py, test_mode_manager.py (100% PASS)
+│   ├── communication_tests/           # test_udp_drive_packet.py, test_udp_mock.py (100% PASS)
 │   ├── model_tests/                   # test_model_inference.py (100% PASS)
-│   ├── integration_tests/             # test_decision_engine.py (100% PASS)
-│   └── communication_tests/           # test_udp_mock.py (100% PASS)
+│   └── integration_tests/             # test_decision_engine.py (100% PASS)
 │
 ├── 07_REPORTS/                        # Technical Performance & Audit Reports
+│   ├── DUAL_MODE_FINAL_REPORT.md      # Dual-mode upgrade certification
+│   ├── DUAL_MODE_UPDATE_AUDIT.md      # Dual-mode architecture audit
 │   ├── PROJECT_AUDIT.md               # Complete initial technical audit
 │   ├── EXISTING_CODE_ANALYSIS.md      # Line-by-line legacy defect analysis
 │   ├── MODEL_AUDIT.md                 # Neural network benchmark & tensor specs

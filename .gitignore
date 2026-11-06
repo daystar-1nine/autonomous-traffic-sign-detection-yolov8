@@ -47,6 +47,7 @@ models/yolov8*.pt
 models/best_yolov8s.pt
 models/best_yolov8n_backup.pt
 # Archived legacy runs and raw bundles
+_backup_pre_dual_mode/
 _archive/runs/
 _archive/Autonomous-Car.zip
 _archive/legacy_models/

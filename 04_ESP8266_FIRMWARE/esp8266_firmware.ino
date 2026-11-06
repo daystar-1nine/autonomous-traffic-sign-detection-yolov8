@@ -1,7 +1,8 @@
 /*
  * ==============================================================================
- *  AI Autonomous Car: Standalone Single-File Arduino IDE Firmware (v2.0)
+ *  AI Autonomous Car: Standalone Single-File Arduino IDE Firmware (v2.1)
  * ==============================================================================
+ *  DUAL MODE: Cosmic Byte Ares Pro Manual Driving + Autonomous AI Vision
  *  Open this file directly in Arduino IDE for instant 1-click flashing!
  * ==============================================================================
  */
@@ -22,7 +23,7 @@
 
 // ------------------- WIFI ACCESS POINT --------------------
 const char* AP_SSID     = "AutonomousCar_AP";
-const char* AP_PASSWORD = "12345678";
+const char* AP_PASSWORD = "car12345678";
 
 WiFiUDP udp;
 const unsigned int UDP_PORT = 8888;
@@ -54,6 +55,24 @@ void applyMotors(int leftSpeed, bool leftFwd, int rightSpeed, bool rightFwd) {
   analogWrite(PIN_PWMB, adjRight);
 }
 
+void driveDirect(int leftPwm, int rightPwm) {
+  int lPwm = constrain(leftPwm, -1023, 1023);
+  int rPwm = constrain(rightPwm, -1023, 1023);
+
+  bool leftFwd = (lPwm >= 0);
+  bool rightFwd = (rPwm >= 0);
+
+  applyMotors(abs(lPwm), leftFwd, abs(rPwm), rightFwd);
+  currentAction = "DRIVE";
+  currentTargetSpeed = max(abs(lPwm), abs(rPwm));
+
+  if (currentTargetSpeed > 50) {
+    digitalWrite(PIN_LED, LOW); // LED ON
+  } else {
+    digitalWrite(PIN_LED, HIGH); // LED OFF
+  }
+}
+
 void stopCar() {
   analogWrite(PIN_PWMA, 0);
   analogWrite(PIN_PWMB, 0);
@@ -62,14 +81,13 @@ void stopCar() {
   digitalWrite(PIN_BIN1, LOW);
   digitalWrite(PIN_BIN2, LOW);
   currentAction = "STOP";
-  digitalWrite(PIN_LED, HIGH);
+  currentTargetSpeed = 0;
+  digitalWrite(PIN_LED, HIGH); // LED OFF
 }
 
 void executeCommand(String action, int speed, int trim) {
-  action.toUpperCase();
-  lastHeartbeat = millis();
   motorTrim = constrain(trim, -100, 100);
-  if (speed > 0) currentTargetSpeed = constrain(speed, 0, 1023);
+  currentTargetSpeed = constrain(speed, 0, 1023);
 
   if (action == "FORWARD") {
     applyMotors(currentTargetSpeed, true, currentTargetSpeed, true);
@@ -78,12 +96,15 @@ void executeCommand(String action, int speed, int trim) {
   } else if (action == "BACKWARD") {
     applyMotors(currentTargetSpeed, false, currentTargetSpeed, false);
     currentAction = "BACKWARD";
+    digitalWrite(PIN_LED, LOW);
   } else if (action == "LEFT") {
     applyMotors(currentTargetSpeed / 2, false, currentTargetSpeed, true);
     currentAction = "LEFT";
+    digitalWrite(PIN_LED, LOW);
   } else if (action == "RIGHT") {
     applyMotors(currentTargetSpeed, true, currentTargetSpeed / 2, false);
     currentAction = "RIGHT";
+    digitalWrite(PIN_LED, LOW);
   } else if (action == "STOP") {
     stopCar();
   }
@@ -91,7 +112,11 @@ void executeCommand(String action, int speed, int trim) {
 
 void setup() {
   Serial.begin(115200);
-  delay(200);
+  delay(300);
+
+  Serial.println("\n\n==============================================");
+  Serial.println("  AI Autonomous Car Firmware v2.1 (Dual-Mode) ");
+  Serial.println("==============================================");
 
   pinMode(PIN_PWMA, OUTPUT);
   pinMode(PIN_AIN1, OUTPUT);
@@ -113,7 +138,7 @@ void setup() {
   Serial.println("[WIFI] Car IP Address: " + WiFi.softAPIP().toString());
 
   udp.begin(UDP_PORT);
-  Serial.printf("[UDP] Listening on Port %u\n", UDP_PORT);
+  Serial.printf("[UDP] Listening on Port %u (Direct DRIVE + Action Commands)\n", UDP_PORT);
 
   server.on("/ping", HTTP_GET, []() {
     server.send(200, "text/plain", "PONG | IP: " + WiFi.softAPIP().toString() + " | Uptime: " + String(millis()/1000) + "s");
@@ -132,8 +157,24 @@ void loop() {
       packetBuffer[len] = 0;
       String msg = String(packetBuffer);
       msg.trim();
+      lastHeartbeat = millis();
 
-      if (msg.startsWith("CMD:")) {
+      // Direct Drive Mode: "CMD:DRIVE:<LEFT>:<RIGHT>:<SEQ>"
+      if (msg.startsWith("CMD:DRIVE:")) {
+        int p1 = 10;
+        int p2 = msg.indexOf(':', p1);
+        int p3 = (p2 > 0) ? msg.indexOf(':', p2 + 1) : -1;
+        int leftPwm = (p2 > 0) ? msg.substring(p1, p2).toInt() : 0;
+        int rightPwm = (p2 > 0 && p3 > 0) ? msg.substring(p2 + 1, p3).toInt() : (p2 > 0 ? msg.substring(p2 + 1).toInt() : 0);
+
+        driveDirect(leftPwm, rightPwm);
+
+        udp.beginPacket(udp.remoteIP(), udp.remotePort());
+        udp.print("ACK:DRIVE");
+        udp.endPacket();
+      }
+      // Action Mode: "CMD:<ACTION>:<SPEED>:<TRIM>:<SEQ>"
+      else if (msg.startsWith("CMD:")) {
         int p1 = msg.indexOf(':', 4);
         int p2 = (p1 > 0) ? msg.indexOf(':', p1 + 1) : -1;
         String act = (p1 > 0) ? msg.substring(4, p1) : msg.substring(4);

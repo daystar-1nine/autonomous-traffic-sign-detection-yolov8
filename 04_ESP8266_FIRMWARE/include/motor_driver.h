@@ -51,6 +51,7 @@ public:
         targetSpeed = constrain(speed, 0, 1023);
         applyDirectMotors(targetSpeed, true, targetSpeed, true);
         currentAction = "FORWARD";
+        currentSpeed = targetSpeed;
         digitalWrite(PIN_LED, LOW); // LED ON
     }
 
@@ -58,6 +59,8 @@ public:
         targetSpeed = constrain(speed, 0, 1023);
         applyDirectMotors(targetSpeed, false, targetSpeed, false);
         currentAction = "BACKWARD";
+        currentSpeed = targetSpeed;
+        digitalWrite(PIN_LED, LOW);
     }
 
     void turnLeft(int speed) {
@@ -65,6 +68,8 @@ public:
         // Differential Skid Turn: Left motor reverse, Right motor forward
         applyDirectMotors(targetSpeed / 2, false, targetSpeed, true);
         currentAction = "LEFT";
+        currentSpeed = targetSpeed;
+        digitalWrite(PIN_LED, LOW);
     }
 
     void turnRight(int speed) {
@@ -72,9 +77,36 @@ public:
         // Differential Skid Turn: Left motor forward, Right motor reverse
         applyDirectMotors(targetSpeed, true, targetSpeed / 2, false);
         currentAction = "RIGHT";
+        currentSpeed = targetSpeed;
+        digitalWrite(PIN_LED, LOW);
     }
 
-private:
+    /**
+     * Direct differential motor control for manual joystick driving.
+     * @param leftPwm Signed PWM for left motor [-1023 to +1023]
+     * @param rightPwm Signed PWM for right motor [-1023 to +1023]
+     */
+    void driveDirect(int leftPwm, int rightPwm) {
+        int lPwm = constrain(leftPwm, -1023, 1023);
+        int rPwm = constrain(rightPwm, -1023, 1023);
+
+        bool leftFwd = (lPwm >= 0);
+        bool rightFwd = (rPwm >= 0);
+
+        int absLeft = abs(lPwm);
+        int absRight = abs(rPwm);
+
+        applyDirectMotors(absLeft, leftFwd, absRight, rightFwd);
+        currentAction = "DRIVE";
+        currentSpeed = max(absLeft, absRight);
+
+        if (currentSpeed > 50) {
+            digitalWrite(PIN_LED, LOW); // LED ON when driving
+        } else {
+            digitalWrite(PIN_LED, HIGH); // LED OFF when idle
+        }
+    }
+
     void applyDirectMotors(int leftSpeed, bool leftFwd, int rightSpeed, bool rightFwd) {
         // Compensate with motorTrim
         int adjLeft = leftSpeed;
@@ -98,8 +130,6 @@ private:
         digitalWrite(PIN_BIN1, rightFwd ? HIGH : LOW);
         digitalWrite(PIN_BIN2, rightFwd ? LOW : HIGH);
         analogWrite(PIN_PWMB, adjRight);
-
-        currentSpeed = (adjLeft + adjRight) / 2;
     }
 };
 

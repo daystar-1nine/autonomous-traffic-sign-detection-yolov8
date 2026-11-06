@@ -261,25 +261,39 @@ Android smartphone car ka primary AI brain hai jo live camera frames capture kar
 4. Phone me agar prompt aaye: *"This network has no internet access. Stay connected?"* ➔ **Keep Connected / Yes** select karein.
 5. **Mobile Data (4G/5G)** temporarily switch **OFF** karein taaki phone UDP packets ko cellular network par route na kare.
 
-#### 2. Manual Controls Check:
-1. Car App open karein.
-2. Top HUD me check karein: **`ESP Status: CONNECTED`** (Green indicator).
-3. **FORWARD** button press karein:
-   - Dono wheels forward direction me rotate hone chahiye.
-   - *Agar koi wheel ulta ghum raha hai:* Us motor ke dono wires (AO1/AO2 ya BO1/BO2) ko aapas me swap (interchange) kar dein.
-4. **REVERSE** button press karein:
-   - Dono wheels reverse rotate hone chahiye.
-5. **LEFT** button press karein:
-   - Left wheel slow/reverse aur Right wheel forward ghumna chahiye.
-6. **RIGHT** button press karein:
-   - Right wheel slow/reverse aur Left wheel forward ghumna chahiye.
-7. **STOP** button press karein:
-   - Motors instantly stop honi chahiye.
+#### 2. Cosmic Byte Ares Pro Gamepad Bluetooth Pairing:
+1. Ares Pro controller ko power OFF karein.
+2. **`Home + A`** buttons ko 3 seconds tak dabaye rakhein jab tak controller ki LED tezi se blink na karne lage (Android Gamepad Mode).
+3. Redmi phone me **Settings ➔ Bluetooth** open karein aur scan karein:
+   - **Device Name:** `Cosmic Byte Ares Pro` ya `Wireless Controller`
+4. Tap karke **Pair** karein. Controller ki LED solid ho jayegi.
+5. Car app open karein: Top status me `[GAMEPAD: Cosmic Byte Ares Pro]` (Green) dikhai dega.
 
-#### 3. Watchdog Failsafe Test:
-1. FORWARD button press karke car ke wheels spin karein.
-2. Phone ka Wi-Fi toggle OFF karein.
-3. **Verification:** Exactly **500 milliseconds** ke andar car ke dono motors automatically OFF ho jane chahiye (NodeMCU hardware watchdog action).
+#### 3. Dual-Mode Bench Controls Check:
+1. Car App open karein. Top HUD me check karein: **`CAR UDP: <3ms`** (Green indicator).
+2. **MANUAL DRIVING TEST (Ares Pro):**
+   - Press **Button A** on gamepad (ya tap orange `MANUAL (A)` button on screen).
+   - Mode change hoga: `[MODE: MANUAL]` (Orange).
+   - **Left Stick Forward:** Dono wheels smooth forward rotate hone chahiye.
+   - **Left Stick Backward:** Dono wheels reverse rotate hone chahiye.
+   - **Left Stick Left/Right:** Skid steering check karein (ek wheel fast, dusra slow/reverse).
+   - *Agar koi wheel ulta ghum raha hai:* Us motor ke dono wires (`AO1`/`AO2` ya `BO1`/`BO2`) interchange karein.
+   - **Profile Switch:** Press **Button Y** on gamepad: verify HUD cycles `ECO (500)` ➔ `NORMAL (750)` ➔ `SPORT (1000)`.
+3. **EMERGENCY STOP TEST (Button X):**
+   - Left stick forward push karke wheels spin karein aur controller ka **Button X** (ya screen par red `E-STOP` button) dabayein.
+   - **Verification:** Dono wheels instantly freeze ho jane chahiye aur HUD par `[EMERGENCY STOP (LOCKED)]` dikhega.
+4. **CONTROLLER DISCONNECT FAILSAFE TEST:**
+   - Manual mode me wheels spin karein aur controller ko turn OFF karein (hold Home button).
+   - **Verification:** Car instantly Emergency Stop me lock ho jayegi aur motors band ho jayengi.
+5. **AUTONOMOUS MODE TOGGLE TEST (Button B):**
+   - Press **Button B** on gamepad (ya tap cyan `AUTO (B)` button on screen).
+   - Mode change hoga: `[MODE: AUTONOMOUS AI]`. Car cruising command send karegi.
+   - Manual stick input temporarily freeze ho jayega taaki AI drive kar sake.
+   - Kisi bhi time **Button A** dabane par instantly manual control wapas aa jayega.
+
+#### 4. Watchdog Failsafe Test:
+1. Car ke wheels rotate hone par phone ka Wi-Fi toggle OFF karein.
+2. **Verification:** Exactly **1000 milliseconds** ke andar car ke dono motors automatically OFF ho jane chahiye (NodeMCU hardware watchdog action).
 
 ---
 
