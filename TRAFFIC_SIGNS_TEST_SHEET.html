@@ -3,119 +3,192 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Traffic Signs Test Sheet - Autonomous AI Car</title>
+<title>Traffic Signs Test Sheet - Autonomous AI Car v2.2</title>
 <style>
   body {
-    font-family: Arial, sans-serif;
-    background: #121212;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0f111a;
     color: #ffffff;
     margin: 0;
-    padding: 20px;
+    padding: 30px 20px;
     text-align: center;
   }
-  h1 { color: #00E5FF; margin-bottom: 8px; }
-  p { color: #aaaaaa; margin-top: 0; }
+  h1 { 
+    color: #00E5FF; 
+    font-size: 2.2rem;
+    margin-bottom: 6px; 
+    letter-spacing: 1px;
+  }
+  .subtitle { 
+    color: #8b9bb4; 
+    font-size: 1.1rem; 
+    margin-top: 0; 
+    margin-bottom: 25px;
+  }
+  .instructions-box {
+    background: #181d2c;
+    border-left: 4px solid #00E5FF;
+    border-radius: 8px;
+    padding: 16px 22px;
+    max-width: 900px;
+    margin: 0 auto 30px auto;
+    text-align: left;
+    color: #d1d9e6;
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+  .instructions-box b { color: #00E5FF; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 25px;
     max-width: 1200px;
-    margin: 30px auto;
+    margin: 0 auto;
   }
   .card {
-    background: #1e1e1e;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    border: 2px solid #333;
-    transition: transform 0.2s, border-color 0.2s;
+    background: #151926;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    border: 2px solid #232a3d;
+    transition: transform 0.25s, border-color 0.25s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   .card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
     border-color: #00E5FF;
   }
-  .card img {
-    width: 240px;
-    height: 240px;
-    object-fit: contain;
+  .img-wrapper {
+    width: 250px;
+    height: 250px;
     background: #ffffff;
-    border-radius: 8px;
-    padding: 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+  }
+  .card img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
   }
   .badge {
     display: inline-block;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 14px;
-    margin-top: 15px;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-weight: 800;
+    font-size: 15px;
+    margin-top: 18px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
   }
-  .badge-stop { background: #FF1744; color: #fff; }
-  .badge-left { background: #00E5FF; color: #000; }
-  .badge-straight { background: #00E676; color: #000; }
-  .badge-right { background: #FF9100; color: #000; }
-  .badge-no-entry { background: #D50000; color: #fff; }
-  .badge-dead-end { background: #FFD600; color: #000; }
+  .badge-stop { background: #FF1744; color: #fff; box-shadow: 0 0 12px rgba(255, 23, 68, 0.4); }
+  .badge-left { background: #00E5FF; color: #000; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4); }
+  .badge-straight { background: #00E676; color: #000; box-shadow: 0 0 12px rgba(0, 230, 118, 0.4); }
+  .badge-right { background: #FF9100; color: #000; box-shadow: 0 0 12px rgba(255, 145, 0, 0.4); }
+  .badge-no-entry { background: #D50000; color: #fff; box-shadow: 0 0 12px rgba(213, 0, 0, 0.4); }
+  .badge-dead-end { background: #FFD600; color: #000; box-shadow: 0 0 12px rgba(255, 214, 0, 0.4); }
   .action {
-    font-size: 15px;
-    color: #cccccc;
-    margin-top: 8px;
+    font-size: 14px;
+    color: #c5d1e2;
+    margin-top: 12px;
+    line-height: 1.5;
+    text-align: center;
   }
+  .action b { color: #ffffff; }
 </style>
 </head>
 <body>
 
-<h1>🚗 Traffic Signs Test Gallery</h1>
-<p>Is page ko laptop par open rakhein aur phone ka rear camera screen ke samne karein test karne ke liye!</p>
+<h1>🚗 Traffic Signs Test Gallery (Autonomous AI Car v2.2)</h1>
+<p class="subtitle">Is webpage ko monitor/laptop par open rakhein aur car ke phone camera ko screen ke saamne laayein!</p>
+
+<div class="instructions-box">
+  <b>📱 Testing Instructions:</b>
+  <ol style="margin: 8px 0 0 0; padding-left: 20px;">
+    <li>Install the newly generated <b>AutonomousAI_Car_v2.2.apk</b> on your Samsung Galaxy A36.</li>
+    <li>Connect phone hotspot <b>Kunal@Bsnl</b> (Password: <b>Kunal@646</b>) and verify car UDP ping.</li>
+    <li>Switch to <b>Autonomous Mode</b> in the app cockpit.</li>
+    <li>Point camera at any sign card below from a distance of 0.5 to 2 meters.</li>
+    <li>HUD will draw a solid bounding box with &gt;90% confidence and immediately execute the correct maneuver (Skid Pivot Turn, Cruise Forward, or Emergency Brake)!</li>
+  </ol>
+</div>
 
 <div class="grid">
-  <!-- Stop Sign -->
+  <!-- 1. Stop Sign -->
   <div class="card">
-    <img src="dataset/sample_signs/sample_5_stop.jpg" alt="Stop Sign">
-    <br>
+    <div class="img-wrapper">
+      <img src="test_signs/vec_5_stop.png" alt="Stop Sign">
+    </div>
     <span class="badge badge-stop">1. STOP SIGN</span>
-    <div class="action"><b>Action:</b> Gaadi turant brake lagakar rukegi (Emergency / Regulatory Stop).</div>
+    <div class="action">
+      <b>Class ID:</b> 5 | <b>Trigger:</b> Regulatory Stop<br>
+      <b>Car Action:</b> Turant zero-crossing active brake lagakar rukegi (0 PWM).
+    </div>
   </div>
 
-  <!-- Left Turn -->
+  <!-- 2. Left Turn -->
   <div class="card">
-    <img src="dataset/sample_signs/sample_0_left_turn.jpg" alt="Left Turn">
-    <br>
+    <div class="img-wrapper">
+      <img src="test_signs/vec_0_left_turn.png" alt="Left Turn">
+    </div>
     <span class="badge badge-left">2. LEFT TURN</span>
-    <div class="action"><b>Action:</b> Gaadi left wheel slow karke baayein mudegi.</div>
+    <div class="action">
+      <b>Class ID:</b> 0 | <b>Trigger:</b> Sharp Left Pivot<br>
+      <b>Car Action:</b> Left wheel backward, Right wheel forward @ 850 PWM (Instant Skid Pivot).
+    </div>
   </div>
 
-  <!-- Straight Ahead -->
+  <!-- 3. Straight Ahead -->
   <div class="card">
-    <img src="dataset/sample_signs/sample_1_straight_ahead.jpg" alt="Straight Ahead">
-    <br>
+    <div class="img-wrapper">
+      <img src="test_signs/vec_1_straight_ahead.png" alt="Straight Ahead">
+    </div>
     <span class="badge badge-straight">3. STRAIGHT AHEAD</span>
-    <div class="action"><b>Action:</b> Gaadi seedhe standard speed par aage chalegi.</div>
+    <div class="action">
+      <b>Class ID:</b> 1 | <b>Trigger:</b> Cruise Forward<br>
+      <b>Car Action:</b> Dono wheels synchronized forward @ 700 PWM standard speed.
+    </div>
   </div>
 
-  <!-- Right Turn -->
+  <!-- 4. Right Turn -->
   <div class="card">
-    <img src="dataset/sample_signs/sample_2_right_turn.jpg" alt="Right Turn">
-    <br>
+    <div class="img-wrapper">
+      <img src="test_signs/vec_2_right_turn.png" alt="Right Turn">
+    </div>
     <span class="badge badge-right">4. RIGHT TURN</span>
-    <div class="action"><b>Action:</b> Gaadi right wheel slow karke daayein mudegi.</div>
+    <div class="action">
+      <b>Class ID:</b> 2 | <b>Trigger:</b> Sharp Right Pivot<br>
+      <b>Car Action:</b> Left wheel forward, Right wheel backward @ 850 PWM (Instant Skid Pivot).
+    </div>
   </div>
 
-  <!-- No Entry -->
+  <!-- 5. No Entry -->
   <div class="card">
-    <img src="dataset/sample_signs/sample_4_no_entry.jpg" alt="No Entry">
-    <br>
+    <div class="img-wrapper">
+      <img src="test_signs/vec_4_no_entry.png" alt="No Entry">
+    </div>
     <span class="badge badge-no-entry">5. NO ENTRY</span>
-    <div class="action"><b>Action:</b> Obstacle warning - Gaadi aage nahi jaayegi, ruk jayegi.</div>
+    <div class="action">
+      <b>Class ID:</b> 4 | <b>Trigger:</b> Hazard Obstacle<br>
+      <b>Car Action:</b> Forbidden zone detected - Gaadi aage badhna band karke rukegi.
+    </div>
   </div>
 
-  <!-- Dead End -->
+  <!-- 6. Dead End -->
   <div class="card">
-    <img src="dataset/sample_signs/sample_3_dead_end.jpg" alt="Dead End">
-    <br>
+    <div class="img-wrapper">
+      <img src="test_signs/vec_3_dead_end.png" alt="Dead End">
+    </div>
     <span class="badge badge-dead-end">6. DEAD END</span>
-    <div class="action"><b>Action:</b> Rasta band hone par gaadi stop karegi.</div>
+    <div class="action">
+      <b>Class ID:</b> 3 | <b>Trigger:</b> Road Closure<br>
+      <b>Car Action:</b> Rasta band hone par vehicle complete safety halt karegi.
+    </div>
   </div>
 </div>
 
