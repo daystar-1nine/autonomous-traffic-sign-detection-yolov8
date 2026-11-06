@@ -107,13 +107,17 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         modeManager = ControlModeManager(this)
         aresController = AresProController(this, this)
 
-        // Init Neural Network Detector
+        // Init Neural Network Detector (ONNX Runtime Engine)
         try {
-            detector = YoloDetector(this, "yolov8n.tflite", confThreshold = 0.60f)
-            Toast.makeText(this, "YOLOv8n Neural Engine Ready", Toast.LENGTH_SHORT).show()
+            detector = YoloDetector(this, "yolov8n.onnx", confThreshold = 0.35f)
+            if (detector?.isReady() == true) {
+                Toast.makeText(this, "YOLOv8n ONNX Neural Engine Active", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Warning: ONNX Session Failed", Toast.LENGTH_LONG).show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Model ready in assets", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Model Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
 
         setupButtons()
@@ -404,27 +408,39 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
     private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
-        val image = imageProxy.image ?: return null
-        val planes = image.planes
-        val buffer = planes[0].buffer
-        val pixelStride = planes[0].pixelStride
-        val rowStride = planes[0].rowStride
-        val rowPadding = rowStride - pixelStride * image.width
+        return try {
+            val bmp = imageProxy.toBitmap()
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            if (rotationDegrees != 0) {
+                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
+            } else {
+                bmp
+            }
+        } catch (e: Throwable) {
+            val image = imageProxy.image ?: return null
+            val planes = image.planes
+            val buffer = planes[0].buffer
+            val pixelStride = planes[0].pixelStride
+            val rowStride = planes[0].rowStride
+            val rowPadding = rowStride - pixelStride * image.width
 
-        val bitmap = Bitmap.createBitmap(
-            image.width + rowPadding / pixelStride,
-            image.height,
-            Bitmap.Config.ARGB_8888
-        )
-        bitmap.copyPixelsFromBuffer(buffer)
+            val bitmap = Bitmap.createBitmap(
+                image.width + rowPadding / pixelStride,
+                image.height,
+                Bitmap.Config.ARGB_8888
+            )
+            bitmap.copyPixelsFromBuffer(buffer)
 
-        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-        if (rotationDegrees != 0) {
-            val matrix = Matrix()
-            matrix.postRotate(rotationDegrees.toFloat())
-            return Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height, matrix, true)
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            if (rotationDegrees != 0) {
+                val matrix = Matrix()
+                matrix.postRotate(rotationDegrees.toFloat())
+                Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height, matrix, true)
+            } else {
+                bitmap
+            }
         }
-        return bitmap
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

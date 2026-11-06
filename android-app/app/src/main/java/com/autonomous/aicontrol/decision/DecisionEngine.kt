@@ -39,8 +39,8 @@ class DecisionEngine(
     private val REQUIRED_FRAMES = 2
 
     // Proximity Thresholds (Height of Bounding Box / Frame Height)
-    private val THRESH_ACTION_ZONE = 0.11f
-    private val THRESH_APPROACH = 0.06f
+    private val THRESH_ACTION_ZONE = 0.07f
+    private val THRESH_APPROACH = 0.04f
 
     fun processDetections(detections: List<DetectionResult>, manualOverride: Boolean): DrivingDecision {
         val now = System.currentTimeMillis()

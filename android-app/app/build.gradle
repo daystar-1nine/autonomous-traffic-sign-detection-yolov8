@@ -15,6 +15,10 @@ android {
         versionName "2.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a"
+        }
     }
 
     buildTypes {
@@ -56,11 +60,12 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
 
-    // Machine Learning: TensorFlow Lite
+    // Machine Learning: TensorFlow Lite & ONNX Runtime
     implementation 'org.tensorflow:tensorflow-lite:2.14.0'
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
     implementation 'org.tensorflow:tensorflow-lite-gpu:2.14.0'
     implementation 'org.tensorflow:tensorflow-lite-gpu-api:2.14.0'
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.17.1'
 
     // Coroutines for Asynchronous Networking
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
