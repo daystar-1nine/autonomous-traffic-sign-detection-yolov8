@@ -37,8 +37,8 @@
 #define PIN_STBY  15  // NodeMCU D8 (GPIO 15) - TB6612 Standby Enable (Active HIGH)
 #define PIN_LED   2   // NodeMCU D4 (GPIO 2)  - Onboard Telemetry LED (Active LOW)
 
-// Alternate Pin Mapping Flag (Set to 1 to activate suggested Section 7 layout)
-#define USE_SECTION7_SUGGESTED_PINOUT 0
+// Alternate Pin Mapping Flag (Set to 1 to activate your physical hardware pinout)
+#define USE_SECTION7_SUGGESTED_PINOUT 1
 
 #if USE_SECTION7_SUGGESTED_PINOUT
   #undef PIN_PWMA

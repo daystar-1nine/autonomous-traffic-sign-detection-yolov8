@@ -1,6 +1,8 @@
 # 04. COMPLETE WIRING GUIDE & PIN ASSIGNMENT
 **Autonomous AI Traffic Sign Detection Car**
 
+![Complete Hardware Wiring Diagram](wiring_diagram.png)
+
 ---
 
 ## 1. Master Wiring Interconnect Table

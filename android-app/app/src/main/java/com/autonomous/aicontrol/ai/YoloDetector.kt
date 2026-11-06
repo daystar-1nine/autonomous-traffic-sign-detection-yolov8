@@ -47,12 +47,15 @@ class YoloDetector(
 
     private fun loadModel() {
         val options = Interpreter.Options()
-        val compatList = CompatibilityList()
-
-        if (compatList.isDelegateSupportedOnThisDevice) {
-            gpuDelegate = GpuDelegate(compatList.bestOptionsForThisDevice)
-            options.addDelegate(gpuDelegate)
-        } else {
+        try {
+            val compatList = CompatibilityList()
+            if (compatList.isDelegateSupportedOnThisDevice) {
+                gpuDelegate = GpuDelegate()
+                options.addDelegate(gpuDelegate)
+            } else {
+                options.setNumThreads(4)
+            }
+        } catch (e: Throwable) {
             options.setNumThreads(4)
         }
 
