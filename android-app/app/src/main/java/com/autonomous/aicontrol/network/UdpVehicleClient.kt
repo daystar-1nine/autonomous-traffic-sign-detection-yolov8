@@ -11,6 +11,7 @@ class UdpVehicleClient(
 ) {
     private var socket: DatagramSocket? = null
     private var inetAddress: InetAddress? = null
+    private var broadcastAddress: InetAddress? = null
     private var sequenceNumber = 0L
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -33,9 +34,10 @@ class UdpVehicleClient(
 
     init {
         try {
-            socket = DatagramSocket()
+            socket = DatagramSocket().apply { broadcast = true }
             socket?.soTimeout = 200
             inetAddress = InetAddress.getByName(espIpAddress)
+            broadcastAddress = InetAddress.getByName("255.255.255.255")
             startHeartbeatAndReceiver()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -81,6 +83,9 @@ class UdpVehicleClient(
             val data = payload.toByteArray(Charsets.UTF_8)
             val packet = DatagramPacket(data, data.size, addr, port)
             s.send(packet)
+            broadcastAddress?.let { bAddr ->
+                s.send(DatagramPacket(data, data.size, bAddr, port))
+            }
             isConnected = true
         } catch (e: Exception) {
             isConnected = false
@@ -98,6 +103,9 @@ class UdpVehicleClient(
             val data = payload.toByteArray(Charsets.UTF_8)
             val packet = DatagramPacket(data, data.size, addr, port)
             s.send(packet)
+            broadcastAddress?.let { bAddr ->
+                s.send(DatagramPacket(data, data.size, bAddr, port))
+            }
             isConnected = true
         } catch (e: Exception) {
             isConnected = false

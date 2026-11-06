@@ -13,15 +13,12 @@
 #include "watchdog.h"
 
 // ------------------- WIFI CONFIGURATION -------------------
-// 0 = SoftAP Mode (Car creates its own hotspot: 192.168.4.1)
-// 1 = Station Mode (Car connects to Android phone hotspot)
-#define USE_STATION_MODE 0
-
+// Dual Mode: Connects to Hotspot + Broadcasts fallback AP simultaneously
 const char* AP_SSID      = "AutonomousCar_AP";
-const char* AP_PASSWORD  = "12345678";
+const char* AP_PASSWORD  = "car12345678";
 
-const char* STA_SSID     = "SamsungHotspot";
-const char* STA_PASSWORD = "carpassword123";
+const char* STA_SSID     = "Kunal@Bsnl";
+const char* STA_PASSWORD = "Kunal@646";
 
 // ------------------- OBJECT INSTANCES ---------------------
 MotorDriver motors;
@@ -31,8 +28,8 @@ ESP8266WebServer httpServer(80);
 
 // ------------------- HTTP DIAGNOSTIC HANDLERS -------------
 void handleHttpPing() {
-    String resp = "PONG | Mode: " + String(USE_STATION_MODE ? "STA" : "AP") +
-                  " | IP: " + (USE_STATION_MODE ? WiFi.localIP().toString() : WiFi.softAPIP().toString()) +
+    String resp = "PONG | STA_IP: " + WiFi.localIP().toString() +
+                  " | AP_IP: " + WiFi.softAPIP().toString() +
                   " | RSSI: " + String(WiFi.RSSI()) + " dBm | Uptime: " + String(millis() / 1000) + "s";
     httpServer.send(200, "text/plain", resp);
 }
@@ -43,6 +40,8 @@ void handleHttpStatus() {
     json += "\"speed\":" + String(motors.currentSpeed) + ",";
     json += "\"trim\":" + String(motors.motorTrim) + ",";
     json += "\"watchdog\":" + String(watchdog.isTimedOut() ? "true" : "false") + ",";
+    json += "\"sta_ip\":\"" + WiFi.localIP().toString() + "\",";
+    json += "\"ap_ip\":\"" + WiFi.softAPIP().toString() + "\",";
     json += "\"uptime\":" + String(millis() / 1000);
     json += "}";
     httpServer.send(200, "application/json", json);
@@ -53,7 +52,7 @@ void setup() {
     delay(300);
 
     Serial.println("\n\n================================================");
-    Serial.println("  AUTONOMOUS AI CAR - ESP8266 FIRMWARE v2.1     ");
+    Serial.println("  AUTONOMOUS AI CAR - ESP8266 FIRMWARE v2.2     ");
     Serial.println("  DUAL MODE: MANUAL (ARES PRO) + AUTO (AI)      ");
     Serial.println("================================================");
 
@@ -61,33 +60,27 @@ void setup() {
     motors.init();
     Serial.println("[HARDWARE] TB6612FNG Driver initialized (Standby HIGH, 1kHz PWM)");
 
-#if USE_STATION_MODE
+    // Dual Wi-Fi Mode (AP + Station simultaneously)
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.softAP(AP_SSID, AP_PASSWORD);
+    Serial.println("[WIFI] SoftAP Broadcast: " + String(AP_SSID) + " (IP: " + WiFi.softAPIP().toString() + ")");
+
     Serial.print("[WIFI] Connecting to Phone Hotspot: ");
     Serial.println(STA_SSID);
-    WiFi.mode(WIFI_STA);
     WiFi.begin(STA_SSID, STA_PASSWORD);
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 25) {
+    while (WiFi.status() != WL_CONNECTED && attempts < 15) {
         delay(400);
         Serial.print(".");
         attempts++;
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\n[WIFI] Connected! Assigned IP: " + WiFi.localIP().toString());
+        Serial.println("\n[WIFI] Connected to Hotspot! Assigned IP: " + WiFi.localIP().toString());
     } else {
-        Serial.println("\n[WIFI] Failed to connect! Falling back to SoftAP Mode.");
-        WiFi.mode(WIFI_AP);
-        WiFi.softAP(AP_SSID, AP_PASSWORD);
-        Serial.println("[WIFI] SoftAP Online: " + String(AP_SSID) + " (IP: " + WiFi.softAPIP().toString() + ")");
+        Serial.println("\n[WIFI] Hotspot not found yet. Fallback SoftAP remains active.");
     }
-#else
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(AP_SSID, AP_PASSWORD);
-    Serial.println("[WIFI] SoftAP Online: " + String(AP_SSID));
-    Serial.println("[WIFI] Access Point IP: " + WiFi.softAPIP().toString());
-#endif
 
     // Start UDP Server on Port 8888
     udpServer.begin();
