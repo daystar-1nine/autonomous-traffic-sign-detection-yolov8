@@ -17,7 +17,7 @@ import kotlin.math.min
 class YoloDetector(
     private val context: Context,
     private val modelFileName: String = "yolov8n.onnx",
-    private val confThreshold: Float = 0.35f,
+    private val confThreshold: Float = 0.28f,
     private val iouThreshold: Float = 0.45f
 ) : AutoCloseable {
 
@@ -143,7 +143,7 @@ class YoloDetector(
                     val areaRatio = boxW * boxH
 
                     val aspect = if (boxH > 0f) boxW / boxH else 0f
-                    if (areaRatio in 0.002f..0.95f && aspect in 0.30f..3.0f) {
+                    if (areaRatio in 0.001f..0.99f && aspect in 0.25f..4.0f) {
                         candidates.add(
                             DetectionResult(
                                 classId = maxClass,
@@ -187,7 +187,7 @@ class YoloDetector(
                     val areaRatio = boxW * boxH
 
                     val aspect = if (boxH > 0f) boxW / boxH else 0f
-                    if (areaRatio in 0.002f..0.95f && aspect in 0.30f..3.0f) {
+                    if (areaRatio in 0.001f..0.99f && aspect in 0.25f..4.0f) {
                         candidates.add(
                             DetectionResult(
                                 classId = maxClass,

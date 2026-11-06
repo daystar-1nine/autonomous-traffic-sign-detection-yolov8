@@ -34,6 +34,9 @@ class DecisionEngine(
 
     private var consecutiveCount = 0
     private var lastCandidateName: String? = null
+    private var lastConfirmedSign: DetectionResult? = null
+    private var lastSignTimestamp = 0L
+    private val SIGN_PERSISTENCE_MS = 350L
 
     private val THRESH_ACTION_ZONE = 0.05f
     private val THRESH_APPROACH = 0.03f
@@ -45,6 +48,7 @@ class DecisionEngine(
             state = VehicleState.MANUAL
             consecutiveCount = 0
             lastCandidateName = null
+            lastConfirmedSign = null
             return DrivingDecision(
                 state = VehicleState.MANUAL,
                 command = "STOP",
@@ -66,10 +70,18 @@ class DecisionEngine(
                 consecutiveCount = 1
                 lastCandidateName = primary.className
             }
+            lastConfirmedSign = primary
+            lastSignTimestamp = now
             primary
+        } else if (lastConfirmedSign != null && (now - lastSignTimestamp < SIGN_PERSISTENCE_MS)) {
+            // Smooth over single-frame dropped detections to eliminate HUD/motor flicker
+            lastConfirmedSign
         } else {
             consecutiveCount = max(0, consecutiveCount - 1)
-            if (consecutiveCount == 0) lastCandidateName = null
+            if (consecutiveCount == 0) {
+                lastCandidateName = null
+                lastConfirmedSign = null
+            }
             null
         }
 

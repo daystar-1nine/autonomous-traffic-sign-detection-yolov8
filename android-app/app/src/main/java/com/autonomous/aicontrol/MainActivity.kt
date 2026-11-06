@@ -129,7 +129,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
         // Init Neural Network Detector (ONNX Runtime Engine)
         try {
-            detector = YoloDetector(this, "yolov8n.onnx", confThreshold = 0.35f)
+            detector = YoloDetector(this, "yolov8n.onnx", confThreshold = 0.28f)
             if (detector?.isReady() == true) {
                 Toast.makeText(this, "YOLOv8n ONNX Neural Engine Active", Toast.LENGTH_SHORT).show()
             } else {

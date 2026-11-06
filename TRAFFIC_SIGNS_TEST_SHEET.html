@@ -482,6 +482,9 @@
     <div class="canvas-header">
       <span id="canvasHeaderTitle">TARGET SIGN // 01 OF 06</span>
       <div style="display: flex; gap: 8px;">
+        <button class="neo-btn" id="btnVariant" style="padding: 4px 10px; font-size: 11px; display: none; background: #FFE600; color: #000;" onclick="cycleVariant()">
+          [ ARROW: BENT ]
+        </button>
         <button class="neo-btn" style="padding: 4px 10px; font-size: 11px;" onclick="navigateSign(-1)">
           [ ◄ PREV ]
         </button>
@@ -629,6 +632,11 @@
       keyIndex: 1,
       name: "LEFT TURN",
       file: "test_signs/vec_0_left_turn.png",
+      variants: [
+        { file: "test_signs/vec_0_left_turn.png", label: "ARROW: BENT ↰" },
+        { file: "test_signs/vec_0_left_horiz.png", label: "ARROW: HORIZONTAL ←" }
+      ],
+      activeVariant: 0,
       action: "SHARP DIFFERENTIAL LEFT PIVOT",
       highlightClass: "highlight-cyan",
       pwm: "LEFT: -850 PWM | RIGHT: +850 PWM",
@@ -640,6 +648,11 @@
       keyIndex: 2,
       name: "STRAIGHT AHEAD",
       file: "test_signs/vec_1_straight_ahead.png",
+      variants: [
+        { file: "test_signs/vec_1_straight_ahead.png", label: "ARROW: BOLD ↑" },
+        { file: "test_signs/vec_1_straight_iso.png", label: "ARROW: SHARP ISO ↑" }
+      ],
+      activeVariant: 0,
       action: "SYNCHRONIZED FORWARD CRUISE",
       highlightClass: "highlight-green",
       pwm: "LEFT: +700 PWM | RIGHT: +700 PWM",
@@ -651,6 +664,11 @@
       keyIndex: 3,
       name: "RIGHT TURN",
       file: "test_signs/vec_2_right_turn.png",
+      variants: [
+        { file: "test_signs/vec_2_right_turn.png", label: "ARROW: BENT ↱" },
+        { file: "test_signs/vec_2_right_horiz.png", label: "ARROW: HORIZONTAL →" }
+      ],
+      activeVariant: 0,
       action: "SHARP DIFFERENTIAL RIGHT PIVOT",
       highlightClass: "highlight-orange",
       pwm: "LEFT: +850 PWM | RIGHT: -850 PWM",
@@ -711,6 +729,18 @@
   let simTimer = null;
   let isGridVisible = false;
 
+  function cycleVariant() {
+    const signId = SIGN_ORDER[currentOrderIdx];
+    const sign = SIGNS.find(s => s.id === signId);
+    if (!sign || !sign.variants || sign.variants.length <= 1) return;
+
+    sign.activeVariant = ((sign.activeVariant || 0) + 1) % sign.variants.length;
+    const variant = sign.variants[sign.activeVariant];
+
+    document.getElementById("activeSignImg").src = variant.file;
+    document.getElementById("btnVariant").innerText = `[ ${variant.label} ]`;
+  }
+
   function selectSign(signId) {
     const sign = SIGNS.find(s => s.id === signId);
     if (!sign) return;
@@ -723,9 +753,18 @@
       toggleGridView();
     }
 
-    // Update Image
+    // Update Image & Variant Button
     const imgEl = document.getElementById("activeSignImg");
-    imgEl.src = sign.file;
+    const btnVar = document.getElementById("btnVariant");
+    if (sign.variants && sign.variants.length > 1) {
+      btnVar.style.display = "inline-flex";
+      btnVar.innerText = `[ ${sign.variants[sign.activeVariant || 0].label} ]`;
+      imgEl.src = sign.variants[sign.activeVariant || 0].file;
+    } else {
+      btnVar.style.display = "none";
+      imgEl.src = sign.file;
+    }
+    imgEl.alt = sign.name;
     imgEl.alt = sign.name;
 
     // Update Header
