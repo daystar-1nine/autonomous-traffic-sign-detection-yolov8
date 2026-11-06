@@ -66,7 +66,7 @@ public:
     void turnLeft(int speed) {
         targetSpeed = constrain(speed, 0, 1023);
         // Differential Skid Turn: Left motor reverse, Right motor forward
-        applyDirectMotors(targetSpeed / 2, false, targetSpeed, true);
+        applyDirectMotors(targetSpeed, false, targetSpeed, true);
         currentAction = "LEFT";
         currentSpeed = targetSpeed;
         digitalWrite(PIN_LED, LOW);
@@ -75,7 +75,7 @@ public:
     void turnRight(int speed) {
         targetSpeed = constrain(speed, 0, 1023);
         // Differential Skid Turn: Left motor forward, Right motor reverse
-        applyDirectMotors(targetSpeed, true, targetSpeed / 2, false);
+        applyDirectMotors(targetSpeed, true, targetSpeed, false);
         currentAction = "RIGHT";
         currentSpeed = targetSpeed;
         digitalWrite(PIN_LED, LOW);

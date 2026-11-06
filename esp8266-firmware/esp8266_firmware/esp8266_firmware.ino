@@ -126,10 +126,12 @@ void executeCommand(String action, int speed, int trim) {
     applyMotors(currentTargetSpeed, false, currentTargetSpeed, false);
     currentAction = "BACKWARD";
   } else if (action == "LEFT") {
-    applyMotors(currentTargetSpeed / 2, false, currentTargetSpeed, true);
+    // Sharp differential pivot turn: Left reverse, Right forward
+    applyMotors(currentTargetSpeed, false, currentTargetSpeed, true);
     currentAction = "LEFT";
   } else if (action == "RIGHT") {
-    applyMotors(currentTargetSpeed, true, currentTargetSpeed / 2, false);
+    // Sharp differential pivot turn: Left forward, Right reverse
+    applyMotors(currentTargetSpeed, true, currentTargetSpeed, false);
     currentAction = "RIGHT";
   } else if (action == "STOP") {
     stopCar();

@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
     @Volatile private var isForwardObstacleHazard: Boolean = false
     @Volatile private var hazardName: String = "CLEAR"
     private var vibrator: android.os.Vibrator? = null
+    private var manualRotationOffset: Int = 0
 
     private var lastAxisX: Float = 0f
     private var lastAxisY: Float = 0f
@@ -131,6 +132,14 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Model Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+
+        manualRotationOffset = getSharedPreferences("ai_car_prefs", MODE_PRIVATE).getInt("cam_rotation_offset", 0)
+
+        tvInference.setOnClickListener {
+            manualRotationOffset = (manualRotationOffset + 90) % 360
+            getSharedPreferences("ai_car_prefs", MODE_PRIVATE).edit().putInt("cam_rotation_offset", manualRotationOffset).apply()
+            Toast.makeText(this, "Camera Calibration Offset: +${manualRotationOffset}°", Toast.LENGTH_SHORT).show()
         }
 
         setupButtons()
@@ -425,11 +434,16 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+            val targetRot = previewView.display?.rotation ?: windowManager.defaultDisplay.rotation
+
+            val preview = Preview.Builder()
+                .setTargetRotation(targetRot)
+                .build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
 
             val imageAnalyzer = ImageAnalysis.Builder()
+                .setTargetRotation(targetRot)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -463,8 +477,9 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         val dtInference = System.currentTimeMillis() - t0
 
         // 2. Active Safety Obstacle & Collision Check (Continuous in Both Modes)
+        // ONLY triggers for actual stop/blocking hazards, never for turning signs
         val hazardSign = detections.firstOrNull { det ->
-            (det.className in listOf("stop", "no_entry", "dead_end") && det.heightRatio >= 0.08f) || (det.heightRatio >= 0.22f)
+            (det.className in listOf("stop", "no_entry", "dead_end") && det.heightRatio >= 0.08f)
         }
 
         if (hazardSign != null) {
@@ -498,7 +513,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         runOnUiThread {
             overlayView.setResults(detections, decision)
             tvFps.text = "FPS: ${"%.1f".format(fps)}"
-            tvInference.text = "AI: ${dtInference}ms"
+            tvInference.text = "AI: ${dtInference}ms | ORIENT: +${manualRotationOffset}° [Tap to Fix]"
 
             val pingText = if (udpClient.isConnected) "${udpClient.lastPingMs}ms" else "DISCONNECTED"
             tvCarStatus.text = "CAR UDP: $pingText"
@@ -506,6 +521,11 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             if (isAutonomous) {
                 tvCurrentAction.text = "AUTO: ${decision.statusMessage}"
                 tvSignInfo.text = "TARGET: ${decision.targetSignName.uppercase()} | ZONE: ${decision.distanceZone}"
+                tvMotorOutputs.text = "AUTO MOTOR: ${decision.command} @ ${decision.speed} PWM"
+                tvCurrentAction.setTextColor(
+                    if (decision.command == "STOP") ContextCompat.getColor(this, R.color.hud_red)
+                    else ContextCompat.getColor(this, R.color.hud_cyan)
+                )
             } else if (modeManager.isManual()) {
                 val detectedText = if (detections.isNotEmpty()) "${detections[0].className.uppercase()} (${(detections[0].confidence*100).toInt()}%)" else "ROAD CLEAR"
                 val radarStatus = if (isForwardObstacleHazard) " [⚠️ COLLISION WARNING: $hazardName]" else " [ADAS: SAFE]"
@@ -516,11 +536,11 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
     private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+        val totalRotation = (imageProxy.imageInfo.rotationDegrees + manualRotationOffset) % 360
         return try {
             val bmp = imageProxy.toBitmap()
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            if (rotationDegrees != 0) {
-                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+            if (totalRotation != 0) {
+                val matrix = Matrix().apply { postRotate(totalRotation.toFloat()) }
                 Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
             } else {
                 bmp
@@ -540,10 +560,8 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             )
             bitmap.copyPixelsFromBuffer(buffer)
 
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            if (rotationDegrees != 0) {
-                val matrix = Matrix()
-                matrix.postRotate(rotationDegrees.toFloat())
+            if (totalRotation != 0) {
+                val matrix = Matrix().apply { postRotate(totalRotation.toFloat()) }
                 Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height, matrix, true)
             } else {
                 bitmap
