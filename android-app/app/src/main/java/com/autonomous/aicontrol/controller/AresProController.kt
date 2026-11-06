@@ -13,11 +13,19 @@ enum class ControllerButtonAction {
     EMERGENCY_STOP,
     CYCLE_SPEED_PROFILE,
     DECREASE_SPEED,
-    INCREASE_SPEED
+    INCREASE_SPEED,
+    TOGGLE_CRUISE_CONTROL
 }
 
 interface ControllerEventListener {
     fun onJoystickMoved(axisX: Float, axisY: Float)
+    fun onControllerInput(
+        axisX: Float,
+        axisY: Float,
+        rightTrigger: Float,
+        leftTrigger: Float,
+        turboBoost: Boolean
+    )
     fun onButtonActionTriggered(action: ControllerButtonAction)
     fun onControllerConnectionChanged(connected: Boolean, deviceName: String)
     fun onDiagnosticsUpdated(diagnosticData: GamepadDiagnosticData)
@@ -52,18 +60,18 @@ class AresProController(
     var dpadY: Float = 0f
         private set
 
-    private val pressedButtons = mutableSetOf<String>()
+    val pressedButtons = mutableSetOf<String>()
 
     // Configurable Deadband Threshold
-    var deadbandThreshold: Float = 0.10f
+    var deadbandThreshold: Float = 0.05f
 
     // Configurable Keycode Mapping
     var keycodeManualMode: Int = KeyEvent.KEYCODE_BUTTON_A
     var keycodeAutonomousMode: Int = KeyEvent.KEYCODE_BUTTON_B
     var keycodeEmergencyStop: Int = KeyEvent.KEYCODE_BUTTON_X
-    var keycodeCycleProfile: Int = KeyEvent.KEYCODE_BUTTON_Y
-    var keycodeSpeedDown: Int = KeyEvent.KEYCODE_BUTTON_L1
-    var keycodeSpeedUp: Int = KeyEvent.KEYCODE_BUTTON_R1
+    var keycodeCruiseControl: Int = KeyEvent.KEYCODE_BUTTON_Y
+    var keycodeSpeedProfileCycle: Int = KeyEvent.KEYCODE_BUTTON_L1
+    var keycodeTurboBoost: Int = KeyEvent.KEYCODE_BUTTON_R1
 
     init {
         inputManager.registerInputDeviceListener(this, null)
@@ -79,7 +87,7 @@ class AresProController(
                 (sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
             ) {
                 connectedDeviceId = id
-                connectedDeviceName = device.name ?: "Wireless Gamepad"
+                connectedDeviceName = device.name ?: "Cosmic Byte Ares Pro"
                 listener?.onControllerConnectionChanged(true, connectedDeviceName)
                 broadcastDiagnostics()
                 return
@@ -100,7 +108,6 @@ class AresProController(
         if ((event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK ||
             (event.source and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
         ) {
-            // Update device ID if newly detected
             if (connectedDeviceId == -1) {
                 connectedDeviceId = event.deviceId
                 val dev = event.device
@@ -108,26 +115,41 @@ class AresProController(
                 listener?.onControllerConnectionChanged(true, connectedDeviceName)
             }
 
-            // Left Stick
+            // Left Stick (Steering X & Arcade Throttle Y)
             val rawX = event.getAxisValue(MotionEvent.AXIS_X)
             val rawY = event.getAxisValue(MotionEvent.AXIS_Y)
             leftStickX = applyDeadband(rawX)
             leftStickY = applyDeadband(rawY)
 
-            // Right Stick (Z / RZ or RX / RY depending on Android driver)
+            // Right Stick (Camera or Auxiliary)
             val rawZ = event.getAxisValue(MotionEvent.AXIS_Z)
             val rawRZ = event.getAxisValue(MotionEvent.AXIS_RZ)
             rightStickX = applyDeadband(if (rawZ != 0f) rawZ else event.getAxisValue(MotionEvent.AXIS_RX))
             rightStickY = applyDeadband(if (rawRZ != 0f) rawRZ else event.getAxisValue(MotionEvent.AXIS_RY))
 
-            // Triggers
-            leftTrigger = event.getAxisValue(MotionEvent.AXIS_LTRIGGER).coerceAtLeast(event.getAxisValue(MotionEvent.AXIS_BRAKE))
-            rightTrigger = event.getAxisValue(MotionEvent.AXIS_RTRIGGER).coerceAtLeast(event.getAxisValue(MotionEvent.AXIS_GAS))
+            // Pressure Sensitive Triggers: RT (Gas/Forward) & LT (Brake/Reverse)
+            val rawRt = maxOf(
+                event.getAxisValue(MotionEvent.AXIS_RTRIGGER),
+                event.getAxisValue(MotionEvent.AXIS_GAS),
+                if (event.getAxisValue(MotionEvent.AXIS_RZ) > 0f) event.getAxisValue(MotionEvent.AXIS_RZ) else 0f
+            ).coerceIn(0f, 1f)
+
+            val rawLt = maxOf(
+                event.getAxisValue(MotionEvent.AXIS_LTRIGGER),
+                event.getAxisValue(MotionEvent.AXIS_BRAKE),
+                if (event.getAxisValue(MotionEvent.AXIS_Z) > 0f) event.getAxisValue(MotionEvent.AXIS_Z) else 0f
+            ).coerceIn(0f, 1f)
+
+            rightTrigger = applyDeadband(rawRt)
+            leftTrigger = applyDeadband(rawLt)
 
             // D-Pad Hat
             dpadX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
             dpadY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
 
+            val isTurbo = pressedButtons.contains("R1") || pressedButtons.contains("RB")
+
+            listener?.onControllerInput(leftStickX, leftStickY, rightTrigger, leftTrigger, isTurbo)
             listener?.onJoystickMoved(leftStickX, leftStickY)
             broadcastDiagnostics()
             return true
@@ -154,14 +176,16 @@ class AresProController(
             keycodeAutonomousMode -> {
                 listener?.onButtonActionTriggered(ControllerButtonAction.ENABLE_AUTONOMOUS)
             }
-            keycodeCycleProfile -> {
+            keycodeCruiseControl -> {
+                listener?.onButtonActionTriggered(ControllerButtonAction.TOGGLE_CRUISE_CONTROL)
+            }
+            keycodeSpeedProfileCycle -> {
                 listener?.onButtonActionTriggered(ControllerButtonAction.CYCLE_SPEED_PROFILE)
             }
-            keycodeSpeedDown -> {
-                listener?.onButtonActionTriggered(ControllerButtonAction.DECREASE_SPEED)
-            }
-            keycodeSpeedUp -> {
-                listener?.onButtonActionTriggered(ControllerButtonAction.INCREASE_SPEED)
+            keycodeTurboBoost -> {
+                // Handled via pressedButtons + onControllerInput
+                val isTurbo = true
+                listener?.onControllerInput(leftStickX, leftStickY, rightTrigger, leftTrigger, isTurbo)
             }
         }
 
@@ -176,6 +200,11 @@ class AresProController(
         if (!isGamepadEvent(event)) return false
         val buttonName = KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_BUTTON_")
         pressedButtons.remove(buttonName)
+
+        if (keyCode == keycodeTurboBoost) {
+            listener?.onControllerInput(leftStickX, leftStickY, rightTrigger, leftTrigger, false)
+        }
+
         broadcastDiagnostics()
         return true
     }
@@ -207,42 +236,21 @@ class AresProController(
             rightStickY = rightStickY,
             leftTrigger = leftTrigger,
             rightTrigger = rightTrigger,
-            dpadX = dpadX,
-            dpadY = dpadY,
             activeButtons = pressedButtons.toSet()
         )
         listener?.onDiagnosticsUpdated(data)
     }
 
-    // InputDeviceListener callbacks
     override fun onInputDeviceAdded(deviceId: Int) {
-        val dev = inputManager.getInputDevice(deviceId) ?: return
-        if ((dev.sources and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-            (dev.sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
-        ) {
-            connectedDeviceId = deviceId
-            connectedDeviceName = dev.name ?: "Cosmic Byte Ares Pro"
-            listener?.onControllerConnectionChanged(true, connectedDeviceName)
-            broadcastDiagnostics()
-        }
+        detectConnectedGamepad()
     }
 
     override fun onInputDeviceRemoved(deviceId: Int) {
-        if (deviceId == connectedDeviceId) {
-            connectedDeviceId = -1
-            connectedDeviceName = "Disconnected"
-            leftStickX = 0f
-            leftStickY = 0f
-            pressedButtons.clear()
-            listener?.onControllerConnectionChanged(false, connectedDeviceName)
-            broadcastDiagnostics()
-        }
+        detectConnectedGamepad()
     }
 
     override fun onInputDeviceChanged(deviceId: Int) {
-        if (deviceId == connectedDeviceId) {
-            detectConnectedGamepad()
-        }
+        detectConnectedGamepad()
     }
 
     fun release() {

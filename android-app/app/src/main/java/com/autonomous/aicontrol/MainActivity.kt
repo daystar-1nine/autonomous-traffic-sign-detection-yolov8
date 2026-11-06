@@ -1,6 +1,7 @@
 package com.autonomous.aicontrol
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -58,8 +59,19 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     // Controller & Drive Managers
     private lateinit var aresController: AresProController
-    private val differentialDrive = DifferentialDriveController(SpeedProfile.NORMAL)
+    private val differentialDrive = DifferentialDriveController(SpeedProfile.SPORT)
     private lateinit var modeManager: ControlModeManager
+
+    // Active Safety (ADAS AEB) & Controller Input Cache
+    @Volatile private var isForwardObstacleHazard: Boolean = false
+    @Volatile private var hazardName: String = "CLEAR"
+    private var vibrator: android.os.Vibrator? = null
+
+    private var lastAxisX: Float = 0f
+    private var lastAxisY: Float = 0f
+    private var lastRt: Float = 0f
+    private var lastLt: Float = 0f
+    private var lastTurbo: Boolean = false
 
     private var lastFrameTime = System.currentTimeMillis()
     private var isCameraPipelineReady = false
@@ -106,6 +118,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         // Initialize Managers
         modeManager = ControlModeManager(this)
         aresController = AresProController(this, this)
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
 
         // Init Neural Network Detector (ONNX Runtime Engine)
         try {
@@ -219,16 +232,68 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     // ----------------- CONTROLLER EVENT LISTENER -----------------
 
-    override fun onJoystickMoved(axisX: Float, axisY: Float) {
-        if (modeManager.isManual()) {
-            val outputs = differentialDrive.computeMotorOutputs(axisX, axisY)
-            udpClient.sendDriveCommand(outputs.leftPwm, outputs.rightPwm)
+    override fun onControllerInput(
+        axisX: Float,
+        axisY: Float,
+        rightTrigger: Float,
+        leftTrigger: Float,
+        turboBoost: Boolean
+    ) {
+        lastAxisX = axisX
+        lastAxisY = axisY
+        lastRt = rightTrigger
+        lastLt = leftTrigger
+        lastTurbo = turboBoost
+
+        if (!modeManager.isManual()) return
+
+        // 1. ADAS Active Safety (Auto Emergency Braking in Manual Mode)
+        // If driver is attempting forward throttle (RT > 0.03 or Stick Y < -0.05) AND obstacle is right ahead
+        val isTryingForward = (rightTrigger > 0.03f) || (axisY < -0.05f)
+        val aebEngaged = isTryingForward && isForwardObstacleHazard
+
+        if (aebEngaged) {
+            differentialDrive.reset()
+            udpClient.sendDriveCommand(0, 0)
+            triggerHapticAlert()
 
             runOnUiThread {
-                tvMotorOutputs.text = "MOTORS: L: ${outputs.leftPwm} | R: ${outputs.rightPwm} PWM"
-                tvCurrentAction.text = "MANUAL: Throttle ${"%.2f".format(-axisY)} | Steer ${"%.2f".format(axisX)}"
+                tvMotorOutputs.text = "MOTORS: 0 | 0 PWM [⚠️ ADAS AEB BRAKE ACTIVE]"
+                tvCurrentAction.text = "⚠️ OBSTACLE (${hazardName.uppercase()}) DETECTED! RELEASE THROTTLE OR REVERSE"
+                tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_red))
             }
+            return
         }
+
+        // 2. High-Performance Proportional Driving (RT=Gas, LT=Brake/Rev, StickX=Steering)
+        val outputs = differentialDrive.computeMotorOutputs(
+            stickX = axisX,
+            stickY = axisY,
+            rightTrigger = rightTrigger,
+            leftTrigger = leftTrigger,
+            turboBoost = turboBoost,
+            emergencyBrakeOverride = false
+        )
+
+        udpClient.sendDriveCommand(outputs.leftPwm, outputs.rightPwm)
+
+        runOnUiThread {
+            val turboTag = if (outputs.isTurboActive) " [🔥TURBO BOOST 1023]" else ""
+            val cruiseTag = if (differentialDrive.isCruiseControlActive) " [CRUISE ON]" else ""
+            val gasPct = (rightTrigger * 100).toInt()
+            val revPct = (leftTrigger * 100).toInt()
+
+            tvMotorOutputs.text = "MOTORS: L: ${outputs.leftPwm} | R: ${outputs.rightPwm} PWM$turboTag$cruiseTag"
+            tvCurrentAction.text = "MANUAL: RT(Gas): $gasPct% | LT(Rev): $revPct% | Steer: ${"%.2f".format(axisX)}"
+            tvCurrentAction.setTextColor(
+                if (outputs.isTurboActive) ContextCompat.getColor(this, R.color.hud_orange)
+                else ContextCompat.getColor(this, R.color.hud_cyan)
+            )
+        }
+    }
+
+    override fun onJoystickMoved(axisX: Float, axisY: Float) {
+        onControllerInput(axisX, axisY, lastRt, lastLt, lastTurbo)
     }
 
     override fun onButtonActionTriggered(action: ControllerButtonAction) {
@@ -239,6 +304,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 } else {
                     modeManager.setManualMode(aresController.isConnected(), "Gamepad Button A")
                 }
+                triggerHapticAlert()
             }
             ControllerButtonAction.ENABLE_AUTONOMOUS -> {
                 if (modeManager.isEmergencyStop()) {
@@ -246,14 +312,22 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 } else {
                     modeManager.setAutonomousMode(isCameraPipelineReady, "Gamepad Button B")
                 }
+                triggerHapticAlert()
             }
             ControllerButtonAction.EMERGENCY_STOP -> {
                 modeManager.triggerEmergencyStop("Gamepad Button X Pressed")
+                triggerHapticAlert()
             }
             ControllerButtonAction.CYCLE_SPEED_PROFILE -> {
                 val newProfile = differentialDrive.cycleSpeedProfile()
                 updateProfileUi(newProfile)
                 Toast.makeText(this, "Profile: ${newProfile.displayName}", Toast.LENGTH_SHORT).show()
+                triggerHapticAlert()
+            }
+            ControllerButtonAction.TOGGLE_CRUISE_CONTROL -> {
+                val active = differentialDrive.toggleCruiseControl()
+                Toast.makeText(this, if (active) "Cruise Control ENGAGED [Speed Locked]" else "Cruise Control CANCELLED", Toast.LENGTH_SHORT).show()
+                triggerHapticAlert()
             }
             ControllerButtonAction.DECREASE_SPEED -> {
                 val newProfile = differentialDrive.setSpeedProfileByIndex(
@@ -267,6 +341,19 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 )
                 updateProfileUi(newProfile)
             }
+        }
+    }
+
+    private fun triggerHapticAlert() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator?.vibrate(android.os.VibrationEffect.createOneShot(120, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(120)
+            }
+        } catch (e: Exception) {
+            // ignore if hardware doesn't support
         }
     }
 
@@ -375,16 +462,35 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         val detections = detector?.detect(bitmap) ?: emptyList()
         val dtInference = System.currentTimeMillis() - t0
 
-        // 2. Evaluate Autonomous Decision Engine
+        // 2. Active Safety Obstacle & Collision Check (Continuous in Both Modes)
+        val hazardSign = detections.firstOrNull { det ->
+            (det.className in listOf("stop", "no_entry", "dead_end") && det.heightRatio >= 0.08f) || (det.heightRatio >= 0.22f)
+        }
+
+        if (hazardSign != null) {
+            isForwardObstacleHazard = true
+            hazardName = hazardSign.className
+            if (modeManager.isManual() && (lastRt > 0.03f || lastAxisY < -0.05f)) {
+                // Slam emergency brake in manual mode to prevent forward crash
+                differentialDrive.reset()
+                udpClient.sendDriveCommand(0, 0)
+                triggerHapticAlert()
+            }
+        } else {
+            isForwardObstacleHazard = false
+            hazardName = "CLEAR"
+        }
+
+        // 3. Evaluate Autonomous Decision Engine
         val isAutonomous = modeManager.isAutonomous()
         val decision = decisionEngine.processDetections(detections, manualOverride = !isAutonomous)
 
-        // 3. Dispatch Wireless UDP Command ONLY when in Autonomous Mode
+        // 4. Dispatch Wireless UDP Command ONLY when in Autonomous Mode
         if (isAutonomous) {
             udpClient.sendCommand(decision.command, decision.speed)
         }
 
-        // 4. Update Cockpit HUD on UI Thread
+        // 5. Update Cockpit HUD on UI Thread
         val now = System.currentTimeMillis()
         val fps = 1000f / maxOf(1f, (now - lastFrameTime).toFloat())
         lastFrameTime = now
@@ -401,7 +507,9 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 tvCurrentAction.text = "AUTO: ${decision.statusMessage}"
                 tvSignInfo.text = "TARGET: ${decision.targetSignName.uppercase()} | ZONE: ${decision.distanceZone}"
             } else if (modeManager.isManual()) {
-                tvSignInfo.text = "AI DETECTED: ${if (detections.isNotEmpty()) detections[0].className.uppercase() else "NONE"}"
+                val detectedText = if (detections.isNotEmpty()) "${detections[0].className.uppercase()} (${(detections[0].confidence*100).toInt()}%)" else "ROAD CLEAR"
+                val radarStatus = if (isForwardObstacleHazard) " [⚠️ COLLISION WARNING: $hazardName]" else " [ADAS: SAFE]"
+                tvSignInfo.text = "VISION: $detectedText$radarStatus"
             }
         }
     }
