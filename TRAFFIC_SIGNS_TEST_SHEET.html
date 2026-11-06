@@ -3,194 +3,880 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Traffic Signs Test Sheet - Autonomous AI Car v2.2</title>
+<title>TRAFFIC SIGN TEST BENCH // NEO-BRUTALISM EDITION</title>
 <style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #0f111a;
-    color: #ffffff;
+  :root {
+    --bg-main: #F4F0EA;
+    --border-color: #000000;
+    --border-width: 3.5px;
+    --shadow-offset: 5px;
+    --shadow-main: var(--shadow-offset) var(--shadow-offset) 0px var(--border-color);
+    --shadow-hover: 7px 7px 0px var(--border-color);
+    --shadow-active: 2px 2px 0px var(--border-color);
+
+    --color-stop: #FF2A55;
+    --color-left: #00F0FF;
+    --color-straight: #00F59B;
+    --color-right: #FF6B00;
+    --color-no-entry: #E60039;
+    --color-dead-end: #FFE600;
+    --color-dark: #12141A;
+    --color-white: #FFFFFF;
+    --color-cream: #FFFDF9;
+    --color-gray: #E2DDD5;
+  }
+
+  * {
+    box-sizing: border-box;
     margin: 0;
-    padding: 30px 20px;
-    text-align: center;
+    padding: 0;
   }
-  h1 { 
-    color: #00E5FF; 
-    font-size: 2.2rem;
-    margin-bottom: 6px; 
-    letter-spacing: 1px;
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--color-dark);
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
+    padding: 24px 20px;
+    line-height: 1.4;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
   }
-  .subtitle { 
-    color: #8b9bb4; 
-    font-size: 1.1rem; 
-    margin-top: 0; 
-    margin-bottom: 25px;
+
+  /* Header Section */
+  .header-bar {
+    max-width: 1300px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--color-white);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-main);
+    padding: 16px 24px;
   }
-  .instructions-box {
-    background: #181d2c;
-    border-left: 4px solid #00E5FF;
-    border-radius: 8px;
-    padding: 16px 22px;
-    max-width: 900px;
-    margin: 0 auto 30px auto;
-    text-align: left;
-    color: #d1d9e6;
-    line-height: 1.6;
-    font-size: 0.95rem;
+
+  .brand-title {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
-  .instructions-box b { color: #00E5FF; }
-  .grid {
+
+  .brand-badge {
+    background: var(--color-dead-end);
+    color: var(--border-color);
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px var(--border-color);
+    text-transform: uppercase;
+  }
+
+  .status-pills {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    border: 2.5px solid var(--border-color);
+    box-shadow: 3px 3px 0px var(--border-color);
+    background: var(--color-white);
+  }
+
+  .pill-green { background: var(--color-straight); }
+  .pill-cyan { background: var(--color-left); }
+  .pill-yellow { background: var(--color-dead-end); }
+
+  /* Navigation & Toolbar */
+  .toolbar-wrapper {
+    max-width: 1300px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .neo-btn {
+    appearance: none;
+    background: var(--color-white);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-main);
+    color: var(--border-color);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
+  }
+
+  .neo-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .neo-btn:active, .neo-btn.active {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-active);
+  }
+
+  .neo-btn.tab-stop.active { background: var(--color-stop); color: var(--color-white); }
+  .neo-btn.tab-left.active { background: var(--color-left); color: var(--color-dark); }
+  .neo-btn.tab-straight.active { background: var(--color-straight); color: var(--color-dark); }
+  .neo-btn.tab-right.active { background: var(--color-right); color: var(--color-white); }
+  .neo-btn.tab-no-entry.active { background: var(--color-no-entry); color: var(--color-white); }
+  .neo-btn.tab-dead-end.active { background: var(--color-dead-end); color: var(--color-dark); }
+
+  .hotkey-badge {
+    background: rgba(0, 0, 0, 0.12);
+    padding: 2px 6px;
+    font-size: 10px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 2px;
+  }
+
+  .view-controls {
+    display: flex;
+    gap: 10px;
+  }
+
+  .view-btn {
+    background: var(--color-cream);
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  /* Presentation Stage (Focus Mode) */
+  .stage-container {
+    max-width: 1300px;
+    margin: 0 auto 24px auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 25px;
-    max-width: 1200px;
-    margin: 0 auto;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: stretch;
   }
-  .card {
-    background: #151926;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-    border: 2px solid #232a3d;
-    transition: transform 0.25s, border-color 0.25s;
+
+  @media (max-width: 1024px) {
+    .stage-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .sign-canvas-card {
+    background: var(--color-white);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-main);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+  }
+
+  .canvas-header {
+    background: var(--color-gray);
+    border-bottom: var(--border-width) solid var(--border-color);
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    font-weight: 800;
+    font-size: 13px;
+    text-transform: uppercase;
   }
-  .card:hover {
-    transform: translateY(-6px);
-    border-color: #00E5FF;
-  }
-  .img-wrapper {
-    width: 250px;
-    height: 250px;
-    background: #ffffff;
-    border-radius: 12px;
+
+  .stage-viewport {
+    flex: 1;
+    min-height: 480px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+    position: relative;
+    padding: 40px 20px;
+    background: #FFFFFF;
+    transition: background-color 0.2s ease;
   }
-  .card img {
+
+  .stage-viewport.bg-dark { background: #16181D; }
+  .stage-viewport.bg-cream { background: #FFFBF0; }
+
+  .sign-image-element {
     max-width: 100%;
-    max-height: 100%;
+    max-height: 420px;
     object-fit: contain;
+    transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15));
   }
-  .badge {
-    display: inline-block;
-    padding: 8px 18px;
-    border-radius: 30px;
+
+  .canvas-footer {
+    border-top: var(--border-width) solid var(--border-color);
+    padding: 14px 20px;
+    background: var(--color-white);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
     font-weight: 800;
-    font-size: 15px;
-    margin-top: 18px;
-    letter-spacing: 0.5px;
     text-transform: uppercase;
   }
-  .badge-stop { background: #FF1744; color: #fff; box-shadow: 0 0 12px rgba(255, 23, 68, 0.4); }
-  .badge-left { background: #00E5FF; color: #000; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4); }
-  .badge-straight { background: #00E676; color: #000; box-shadow: 0 0 12px rgba(0, 230, 118, 0.4); }
-  .badge-right { background: #FF9100; color: #000; box-shadow: 0 0 12px rgba(255, 145, 0, 0.4); }
-  .badge-no-entry { background: #D50000; color: #fff; box-shadow: 0 0 12px rgba(213, 0, 0, 0.4); }
-  .badge-dead-end { background: #FFD600; color: #000; box-shadow: 0 0 12px rgba(255, 214, 0, 0.4); }
-  .action {
-    font-size: 14px;
-    color: #c5d1e2;
-    margin-top: 12px;
-    line-height: 1.5;
-    text-align: center;
+
+  input[type="range"] {
+    accent-color: var(--border-color);
+    cursor: pointer;
+    width: 140px;
   }
-  .action b { color: #ffffff; }
+
+  .contrast-toggles {
+    display: flex;
+    gap: 6px;
+  }
+
+  .contrast-dot {
+    width: 26px;
+    height: 26px;
+    border: 2.5px solid var(--border-color);
+    cursor: pointer;
+    box-shadow: 2px 2px 0px var(--border-color);
+  }
+  .dot-white { background: #FFFFFF; }
+  .dot-dark { background: #16181D; }
+  .dot-cream { background: #FFFBF0; }
+
+  /* Side Telemetry Panel */
+  .telemetry-card {
+    background: var(--color-white);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-main);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .telemetry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: var(--border-width) solid var(--border-color);
+    padding-bottom: 12px;
+  }
+
+  .telemetry-title {
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .telemetry-row {
+    background: var(--color-gray);
+    border: 2.5px solid var(--border-color);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 2px 2px 0px var(--border-color);
+  }
+
+  .row-label {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #555555;
+  }
+
+  .row-value {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--border-color);
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .row-value.highlight-red { color: var(--color-stop); }
+  .row-value.highlight-cyan { color: #008899; }
+  .row-value.highlight-orange { color: #C24D00; }
+  .row-value.highlight-green { color: #009955; }
+
+  /* Auto Sequence Simulator Card */
+  .sim-box {
+    background: var(--color-cream);
+    border: 2.5px solid var(--border-color);
+    padding: 14px;
+    box-shadow: 3px 3px 0px var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .sim-progress-bg {
+    width: 100%;
+    height: 12px;
+    background: #E0DDD5;
+    border: 2px solid var(--border-color);
+    overflow: hidden;
+  }
+
+  .sim-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--color-straight);
+    transition: width 0.1s linear;
+  }
+
+  /* Grid Overview Mode */
+  .grid-overview {
+    max-width: 1300px;
+    margin: 0 auto 30px auto;
+    display: none;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .grid-card {
+    background: var(--color-white);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-main);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .grid-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .grid-card img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    margin-bottom: 14px;
+  }
+
+  .grid-badge {
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 900;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px var(--border-color);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* Hotkey Bar */
+  .hotkey-bar {
+    max-width: 1300px;
+    margin: 0 auto;
+    background: var(--color-dark);
+    color: var(--color-white);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-main);
+    padding: 12px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .kbd {
+    background: var(--color-white);
+    color: var(--color-dark);
+    padding: 2px 6px;
+    border: 1.5px solid var(--border-color);
+    box-shadow: 1px 1px 0px var(--border-color);
+    font-size: 11px;
+    margin: 0 4px;
+  }
 </style>
 </head>
 <body>
 
-<h1>🚗 Traffic Signs Test Gallery (Autonomous AI Car v2.2)</h1>
-<p class="subtitle">Is webpage ko monitor/laptop par open rakhein aur car ke phone camera ko screen ke saamne laayein!</p>
-
-<div class="instructions-box">
-  <b>📱 Testing Instructions:</b>
-  <ol style="margin: 8px 0 0 0; padding-left: 20px;">
-    <li>Install the newly generated <b>AutonomousAI_Car_v2.2.apk</b> on your Samsung Galaxy A36.</li>
-    <li>Connect phone hotspot <b>Kunal@Bsnl</b> (Password: <b>Kunal@646</b>) and verify car UDP ping.</li>
-    <li>Switch to <b>Autonomous Mode</b> in the app cockpit.</li>
-    <li>Point camera at any sign card below from a distance of 0.5 to 2 meters.</li>
-    <li>HUD will draw a solid bounding box with &gt;90% confidence and immediately execute the correct maneuver (Skid Pivot Turn, Cruise Forward, or Emergency Brake)!</li>
-  </ol>
-</div>
-
-<div class="grid">
-  <!-- 1. Stop Sign -->
-  <div class="card">
-    <div class="img-wrapper">
-      <img src="test_signs/vec_5_stop.png" alt="Stop Sign">
-    </div>
-    <span class="badge badge-stop">1. STOP SIGN</span>
-    <div class="action">
-      <b>Class ID:</b> 5 | <b>Trigger:</b> Regulatory Stop<br>
-      <b>Car Action:</b> Turant zero-crossing active brake lagakar rukegi (0 PWM).
-    </div>
+<!-- Neo-Brutalist Top Brand Bar -->
+<header class="header-bar">
+  <div class="brand-title">
+    <span>AUTONOMOUS AI CAR</span>
+    <span class="brand-badge">BENCHMARK STUDIO v2.3</span>
   </div>
-
-  <!-- 2. Left Turn -->
-  <div class="card">
-    <div class="img-wrapper">
-      <img src="test_signs/vec_0_left_turn.png" alt="Left Turn">
-    </div>
-    <span class="badge badge-left">2. LEFT TURN</span>
-    <div class="action">
-      <b>Class ID:</b> 0 | <b>Trigger:</b> Sharp Left Pivot<br>
-      <b>Car Action:</b> Left wheel backward, Right wheel forward @ 850 PWM (Instant Skid Pivot).
-    </div>
+  <div class="status-pills">
+    <div class="pill pill-green">[●] MODEL: YOLOV8s (99.5% mAP)</div>
+    <div class="pill pill-cyan">[●] STAGE: SINGLE SIGN FOCUS</div>
+    <div class="pill pill-yellow">[●] RESOLUTION: 640x640 PROJECTION</div>
   </div>
+</header>
 
-  <!-- 3. Straight Ahead -->
-  <div class="card">
-    <div class="img-wrapper">
-      <img src="test_signs/vec_1_straight_ahead.png" alt="Straight Ahead">
-    </div>
-    <span class="badge badge-straight">3. STRAIGHT AHEAD</span>
-    <div class="action">
-      <b>Class ID:</b> 1 | <b>Trigger:</b> Cruise Forward<br>
-      <b>Car Action:</b> Dono wheels synchronized forward @ 700 PWM standard speed.
-    </div>
-  </div>
+<!-- Navigation Tabs & Layout Switcher -->
+<div class="toolbar-wrapper">
+  <nav class="nav-tabs" id="navTabs">
+    <button class="neo-btn tab-stop active" onclick="selectSign(5)">
+      <span class="hotkey-badge">1</span> STOP SIGN
+    </button>
+    <button class="neo-btn tab-left" onclick="selectSign(0)">
+      <span class="hotkey-badge">2</span> LEFT TURN
+    </button>
+    <button class="neo-btn tab-straight" onclick="selectSign(1)">
+      <span class="hotkey-badge">3</span> STRAIGHT
+    </button>
+    <button class="neo-btn tab-right" onclick="selectSign(2)">
+      <span class="hotkey-badge">4</span> RIGHT TURN
+    </button>
+    <button class="neo-btn tab-no-entry" onclick="selectSign(4)">
+      <span class="hotkey-badge">5</span> NO ENTRY
+    </button>
+    <button class="neo-btn tab-dead-end" onclick="selectSign(3)">
+      <span class="hotkey-badge">6</span> DEAD END
+    </button>
+  </nav>
 
-  <!-- 4. Right Turn -->
-  <div class="card">
-    <div class="img-wrapper">
-      <img src="test_signs/vec_2_right_turn.png" alt="Right Turn">
-    </div>
-    <span class="badge badge-right">4. RIGHT TURN</span>
-    <div class="action">
-      <b>Class ID:</b> 2 | <b>Trigger:</b> Sharp Right Pivot<br>
-      <b>Car Action:</b> Left wheel forward, Right wheel backward @ 850 PWM (Instant Skid Pivot).
-    </div>
-  </div>
-
-  <!-- 5. No Entry -->
-  <div class="card">
-    <div class="img-wrapper">
-      <img src="test_signs/vec_4_no_entry.png" alt="No Entry">
-    </div>
-    <span class="badge badge-no-entry">5. NO ENTRY</span>
-    <div class="action">
-      <b>Class ID:</b> 4 | <b>Trigger:</b> Hazard Obstacle<br>
-      <b>Car Action:</b> Forbidden zone detected - Gaadi aage badhna band karke rukegi.
-    </div>
-  </div>
-
-  <!-- 6. Dead End -->
-  <div class="card">
-    <div class="img-wrapper">
-      <img src="test_signs/vec_3_dead_end.png" alt="Dead End">
-    </div>
-    <span class="badge badge-dead-end">6. DEAD END</span>
-    <div class="action">
-      <b>Class ID:</b> 3 | <b>Trigger:</b> Road Closure<br>
-      <b>Car Action:</b> Rasta band hone par vehicle complete safety halt karegi.
-    </div>
+  <div class="view-controls">
+    <button class="neo-btn view-btn" id="btnToggleGrid" onclick="toggleGridView()">
+      [ ⊞ GRID VIEW ]
+    </button>
+    <button class="neo-btn view-btn" onclick="toggleFullscreen()">
+      [ ⛶ FULLSCREEN ]
+    </button>
   </div>
 </div>
 
+<!-- Main Presentation Stage (Single Sign Focus Mode) -->
+<main class="stage-container" id="stageContainer">
+  
+  <!-- Left Column: The Large Sign Stage -->
+  <section class="sign-canvas-card">
+    <div class="canvas-header">
+      <span id="canvasHeaderTitle">TARGET SIGN // 01 OF 06</span>
+      <div style="display: flex; gap: 8px;">
+        <button class="neo-btn" style="padding: 4px 10px; font-size: 11px;" onclick="navigateSign(-1)">
+          [ ◄ PREV ]
+        </button>
+        <button class="neo-btn" style="padding: 4px 10px; font-size: 11px;" onclick="navigateSign(1)">
+          [ NEXT ► ]
+        </button>
+      </div>
+    </div>
+
+    <!-- Scalable High-Contrast Screen -->
+    <div class="stage-viewport" id="stageViewport">
+      <img id="activeSignImg" class="sign-image-element" src="test_signs/vec_5_stop.png" alt="Traffic Sign">
+    </div>
+
+    <!-- Stage Toolbar: Scale & Canvas Controls -->
+    <div class="canvas-footer">
+      <div class="slider-group">
+        <span>PROJECTION SCALE:</span>
+        <input type="range" id="scaleSlider" min="40" max="115" value="85" oninput="adjustScale(this.value)">
+        <span id="scaleLabel">85%</span>
+      </div>
+
+      <div class="slider-group">
+        <span>CANVAS TINT:</span>
+        <div class="contrast-toggles">
+          <div class="contrast-dot dot-white" title="Pure White Canvas" onclick="setCanvasBg('white')"></div>
+          <div class="contrast-dot dot-dark" title="Dark Road Canvas" onclick="setCanvasBg('dark')"></div>
+          <div class="contrast-dot dot-cream" title="Warm Neo-Cream Canvas" onclick="setCanvasBg('cream')"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right Column: Vehicle Telemetry & Simulation Controls -->
+  <aside class="telemetry-card">
+    <div class="telemetry-header">
+      <h2 class="telemetry-title" id="telemetrySignName">STOP SIGN</h2>
+      <span class="pill pill-yellow" id="telemetryClassId">CLASS: 5</span>
+    </div>
+
+    <div class="telemetry-row">
+      <span class="row-label">EXPECTED VEHICLE ACTION</span>
+      <span class="row-value highlight-red" id="telemetryAction">IMMEDIATE ACTIVE EMERGENCY BRAKE</span>
+    </div>
+
+    <div class="telemetry-row">
+      <span class="row-label">ESP8266 MOTOR PWM DISPATCH</span>
+      <span class="row-value" id="telemetryPwm">LEFT: 0 PWM | RIGHT: 0 PWM</span>
+    </div>
+
+    <div class="telemetry-row">
+      <span class="row-label">DRIVER HARDWARE STATE (TB6612FNG)</span>
+      <span class="row-value" id="telemetryPins">STBY=HIGH | AIN1=LOW | BIN1=LOW</span>
+    </div>
+
+    <div class="telemetry-row">
+      <span class="row-label">DETECTION CONFIDENCE GOAL</span>
+      <span class="row-value highlight-green">&gt; 92.0% YOLOv8 CONFIDENCE</span>
+    </div>
+
+    <!-- Autonomous Drive Sequence Simulator -->
+    <div class="sim-box">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; font-weight: 900; text-transform: uppercase;">DRIVE COURSE SIMULATOR</span>
+        <span id="simStepText" style="font-size: 11px; font-weight: 800;">READY</span>
+      </div>
+      <div class="sim-progress-bg">
+        <div class="sim-progress-bar" id="simProgressBar"></div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="neo-btn" id="btnSimToggle" style="flex: 1; justify-content: center; background: var(--color-straight);" onclick="toggleSimulation()">
+          [ ▷ RUN TEST COURSE ]
+        </button>
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<!-- Grid Overview Mode (Hidden by default) -->
+<section class="grid-overview" id="gridOverview">
+  <!-- Stop -->
+  <div class="grid-card" onclick="selectSign(5)">
+    <img src="test_signs/vec_5_stop.png" alt="Stop">
+    <span class="grid-badge" style="background: var(--color-stop); color: #fff;">1. STOP SIGN</span>
+    <p style="font-size: 11px; font-weight: 800; text-align: center;">CLASS 5 // EMERGENCY BRAKE (0 PWM)</p>
+  </div>
+
+  <!-- Left Turn -->
+  <div class="grid-card" onclick="selectSign(0)">
+    <img src="test_signs/vec_0_left_turn.png" alt="Left Turn">
+    <span class="grid-badge" style="background: var(--color-left); color: #000;">2. LEFT TURN</span>
+    <p style="font-size: 11px; font-weight: 800; text-align: center;">CLASS 0 // SKID PIVOT LEFT (850 PWM)</p>
+  </div>
+
+  <!-- Straight Ahead -->
+  <div class="grid-card" onclick="selectSign(1)">
+    <img src="test_signs/vec_1_straight_ahead.png" alt="Straight Ahead">
+    <span class="grid-badge" style="background: var(--color-straight); color: #000;">3. STRAIGHT</span>
+    <p style="font-size: 11px; font-weight: 800; text-align: center;">CLASS 1 // CRUISE FORWARD (700 PWM)</p>
+  </div>
+
+  <!-- Right Turn -->
+  <div class="grid-card" onclick="selectSign(2)">
+    <img src="test_signs/vec_2_right_turn.png" alt="Right Turn">
+    <span class="grid-badge" style="background: var(--color-right); color: #fff;">4. RIGHT TURN</span>
+    <p style="font-size: 11px; font-weight: 800; text-align: center;">CLASS 2 // SKID PIVOT RIGHT (850 PWM)</p>
+  </div>
+
+  <!-- No Entry -->
+  <div class="grid-card" onclick="selectSign(4)">
+    <img src="test_signs/vec_4_no_entry.png" alt="No Entry">
+    <span class="grid-badge" style="background: var(--color-no-entry); color: #fff;">5. NO ENTRY</span>
+    <p style="font-size: 11px; font-weight: 800; text-align: center;">CLASS 4 // OBSTACLE BRAKE (0 PWM)</p>
+  </div>
+
+  <!-- Dead End -->
+  <div class="grid-card" onclick="selectSign(3)">
+    <img src="test_signs/vec_3_dead_end.png" alt="Dead End">
+    <span class="grid-badge" style="background: var(--color-dead-end); color: #000;">6. DEAD END</span>
+    <p style="font-size: 11px; font-weight: 800; text-align: center;">CLASS 3 // ROAD BLOCKED (0 PWM)</p>
+  </div>
+</section>
+
+<!-- Bottom Hotkey Cheatsheet -->
+<footer class="hotkey-bar">
+  <div>
+    <span>KEYBOARD SHORTCUTS:</span>
+    <span><span class="kbd">1-6</span> SELECT SIGN</span>
+    <span><span class="kbd">◄ / ►</span> NAVIGATE</span>
+    <span><span class="kbd">F</span> FULLSCREEN</span>
+    <span><span class="kbd">G</span> GRID MODE</span>
+    <span><span class="kbd">SPACE</span> START/PAUSE COURSE</span>
+  </div>
+  <div>
+    <span>HARDWARE LOCKED: D1, D2, D5, D7, D4, D6, D0</span>
+  </div>
+</footer>
+
+<script>
+  // Sign Data Definitions
+  const SIGNS = [
+    {
+      id: 0,
+      keyIndex: 1,
+      name: "LEFT TURN",
+      file: "test_signs/vec_0_left_turn.png",
+      action: "SHARP DIFFERENTIAL LEFT PIVOT",
+      highlightClass: "highlight-cyan",
+      pwm: "LEFT: -850 PWM | RIGHT: +850 PWM",
+      pins: "STBY=HIGH | AIN1=LOW,AIN2=HIGH | BIN1=HIGH,BIN2=LOW",
+      tabClass: "tab-left"
+    },
+    {
+      id: 1,
+      keyIndex: 2,
+      name: "STRAIGHT AHEAD",
+      file: "test_signs/vec_1_straight_ahead.png",
+      action: "SYNCHRONIZED FORWARD CRUISE",
+      highlightClass: "highlight-green",
+      pwm: "LEFT: +700 PWM | RIGHT: +700 PWM",
+      pins: "STBY=HIGH | AIN1=HIGH,AIN2=LOW | BIN1=HIGH,BIN2=LOW",
+      tabClass: "tab-straight"
+    },
+    {
+      id: 2,
+      keyIndex: 3,
+      name: "RIGHT TURN",
+      file: "test_signs/vec_2_right_turn.png",
+      action: "SHARP DIFFERENTIAL RIGHT PIVOT",
+      highlightClass: "highlight-orange",
+      pwm: "LEFT: +850 PWM | RIGHT: -850 PWM",
+      pins: "STBY=HIGH | AIN1=HIGH,AIN2=LOW | BIN1=LOW,BIN2=HIGH",
+      tabClass: "tab-right"
+    },
+    {
+      id: 3,
+      keyIndex: 5,
+      name: "DEAD END",
+      file: "test_signs/vec_3_dead_end.png",
+      action: "SAFETY STOP (ROADWAY CLOSED)",
+      highlightClass: "highlight-red",
+      pwm: "LEFT: 0 PWM | RIGHT: 0 PWM",
+      pins: "STBY=HIGH | AIN1=LOW,AIN2=LOW | BIN1=LOW,BIN2=LOW",
+      tabClass: "tab-dead-end"
+    },
+    {
+      id: 4,
+      keyIndex: 4,
+      name: "NO ENTRY",
+      file: "test_signs/vec_4_no_entry.png",
+      action: "HAZARD REJECTION (ZERO-CROSSING BRAKE)",
+      highlightClass: "highlight-red",
+      pwm: "LEFT: 0 PWM | RIGHT: 0 PWM",
+      pins: "STBY=HIGH | AIN1=LOW,AIN2=LOW | BIN1=LOW,BIN2=LOW",
+      tabClass: "tab-no-entry"
+    },
+    {
+      id: 5,
+      keyIndex: 0,
+      name: "STOP SIGN",
+      file: "test_signs/vec_5_stop.png",
+      action: "IMMEDIATE ACTIVE EMERGENCY BRAKE",
+      highlightClass: "highlight-red",
+      pwm: "LEFT: 0 PWM | RIGHT: 0 PWM",
+      pins: "STBY=HIGH | AIN1=LOW,AIN2=LOW | BIN1=LOW,BIN2=LOW",
+      tabClass: "tab-stop"
+    }
+  ];
+
+  // Presentation Order: Stop (5), Left (0), Straight (1), Right (2), No Entry (4), Dead End (3)
+  const SIGN_ORDER = [5, 0, 1, 2, 4, 3];
+  let currentOrderIdx = 0; // Starts at Stop sign (id 5)
+
+  // Simulation Course Playlist: Straight -> Right -> Straight -> Left -> Straight -> Stop
+  const SIM_COURSE = [
+    { signId: 1, duration: 4000, label: "STEP 1: CRUISING FORWARD" },
+    { signId: 2, duration: 3500, label: "STEP 2: RIGHT TURN AHEAD" },
+    { signId: 1, duration: 4000, label: "STEP 3: MAINTAINING FORWARD" },
+    { signId: 0, duration: 3500, label: "STEP 4: LEFT TURN AHEAD" },
+    { signId: 1, duration: 3000, label: "STEP 5: APPROACHING INTERSECTION" },
+    { signId: 5, duration: 6000, label: "STEP 6: REGULATORY STOP REACHED" }
+  ];
+  let isSimRunning = false;
+  let simIndex = 0;
+  let simInterval = null;
+  let simTimer = null;
+  let isGridVisible = false;
+
+  function selectSign(signId) {
+    const sign = SIGNS.find(s => s.id === signId);
+    if (!sign) return;
+
+    currentOrderIdx = SIGN_ORDER.indexOf(signId);
+    if (currentOrderIdx === -1) currentOrderIdx = 0;
+
+    // Switch to single stage view if in grid mode
+    if (isGridVisible) {
+      toggleGridView();
+    }
+
+    // Update Image
+    const imgEl = document.getElementById("activeSignImg");
+    imgEl.src = sign.file;
+    imgEl.alt = sign.name;
+
+    // Update Header
+    document.getElementById("canvasHeaderTitle").innerText = `TARGET SIGN // 0${currentOrderIdx + 1} OF 06`;
+
+    // Update Telemetry
+    document.getElementById("telemetrySignName").innerText = sign.name;
+    document.getElementById("telemetryClassId").innerText = `CLASS: ${sign.id}`;
+    
+    const actionEl = document.getElementById("telemetryAction");
+    actionEl.innerText = sign.action;
+    actionEl.className = `row-value ${sign.highlightClass}`;
+
+    document.getElementById("telemetryPwm").innerText = sign.pwm;
+    document.getElementById("telemetryPins").innerText = sign.pins;
+
+    // Update Tabs
+    const buttons = document.querySelectorAll("#navTabs .neo-btn");
+    buttons.forEach(btn => btn.classList.remove("active"));
+    const activeBtn = document.querySelector(`#navTabs .${sign.tabClass}`);
+    if (activeBtn) activeBtn.classList.add("active");
+  }
+
+  function navigateSign(direction) {
+    currentOrderIdx = (currentOrderIdx + direction + SIGN_ORDER.length) % SIGN_ORDER.length;
+    selectSign(SIGN_ORDER[currentOrderIdx]);
+  }
+
+  function adjustScale(val) {
+    document.getElementById("scaleLabel").innerText = val + "%";
+    const imgEl = document.getElementById("activeSignImg");
+    imgEl.style.transform = `scale(${val / 100})`;
+  }
+
+  function setCanvasBg(type) {
+    const vp = document.getElementById("stageViewport");
+    vp.classList.remove("bg-dark", "bg-cream");
+    if (type === "dark") vp.classList.add("bg-dark");
+    if (type === "cream") vp.classList.add("bg-cream");
+  }
+
+  function toggleGridView() {
+    isGridVisible = !isGridVisible;
+    const stage = document.getElementById("stageContainer");
+    const grid = document.getElementById("gridOverview");
+    const btn = document.getElementById("btnToggleGrid");
+
+    if (isGridVisible) {
+      stage.style.display = "none";
+      grid.style.display = "grid";
+      btn.innerText = "[ ⊞ SINGLE STAGE ]";
+      btn.classList.add("active");
+    } else {
+      stage.style.display = "grid";
+      grid.style.display = "none";
+      btn.innerText = "[ ⊞ GRID VIEW ]";
+      btn.classList.remove("active");
+    }
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }
+
+  // Drive Course Simulation Runner
+  function toggleSimulation() {
+    if (isSimRunning) {
+      stopSimulation();
+    } else {
+      startSimulation();
+    }
+  }
+
+  function startSimulation() {
+    isSimRunning = true;
+    simIndex = 0;
+    document.getElementById("btnSimToggle").innerText = "[ ⏸ PAUSE COURSE ]";
+    document.getElementById("btnSimToggle").style.background = "var(--color-dead-end)";
+    runSimStep();
+  }
+
+  function stopSimulation() {
+    isSimRunning = false;
+    clearTimeout(simTimer);
+    clearInterval(simInterval);
+    document.getElementById("btnSimToggle").innerText = "[ ▷ RUN TEST COURSE ]";
+    document.getElementById("btnSimToggle").style.background = "var(--color-straight)";
+    document.getElementById("simProgressBar").style.width = "0%";
+    document.getElementById("simStepText").innerText = "PAUSED";
+  }
+
+  function runSimStep() {
+    if (!isSimRunning) return;
+    if (simIndex >= SIM_COURSE.length) {
+      document.getElementById("simStepText").innerText = "COURSE FINISHED";
+      stopSimulation();
+      return;
+    }
+
+    const step = SIM_COURSE[simIndex];
+    selectSign(step.signId);
+    document.getElementById("simStepText").innerText = step.label;
+
+    const startTime = Date.now();
+    const duration = step.duration;
+    const pBar = document.getElementById("simProgressBar");
+
+    clearInterval(simInterval);
+    simInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(100, (elapsed / duration) * 100);
+      pBar.style.width = pct + "%";
+      if (elapsed >= duration) {
+        clearInterval(simInterval);
+      }
+    }, 50);
+
+    simTimer = setTimeout(() => {
+      simIndex++;
+      runSimStep();
+    }, duration);
+  }
+
+  // Keyboard Navigation
+  window.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT") return;
+
+    if (e.key === "1") selectSign(5); // Stop
+    else if (e.key === "2") selectSign(0); // Left
+    else if (e.key === "3") selectSign(1); // Straight
+    else if (e.key === "4") selectSign(2); // Right
+    else if (e.key === "5") selectSign(4); // No Entry
+    else if (e.key === "6") selectSign(3); // Dead End
+    else if (e.key === "ArrowLeft") navigateSign(-1);
+    else if (e.key === "ArrowRight") navigateSign(1);
+    else if (e.key === "f" || e.key === "F") toggleFullscreen();
+    else if (e.key === "g" || e.key === "G") toggleGridView();
+    else if (e.key === " ") {
+      e.preventDefault();
+      toggleSimulation();
+    }
+  });
+
+  // Initial load
+  selectSign(5);
+</script>
 </body>
 </html>

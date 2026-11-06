@@ -49,6 +49,7 @@ models/best_yolov8n_backup.pt
 dataset_augmented/
 dataset_robust/
 yolov8n.pt
+yolov8s.pt
 crop_class_*.jpg
 template_*.png
 
