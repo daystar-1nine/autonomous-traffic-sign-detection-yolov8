@@ -97,10 +97,6 @@ class UdpVehicleClient(
             broadcastAddress?.let { bAddr ->
                 s.send(DatagramPacket(data, data.size, bAddr, port))
             }
-            try {
-                val hotspotBroadcast = InetAddress.getByName("192.168.43.255")
-                s.send(DatagramPacket(data, data.size, hotspotBroadcast, port))
-            } catch (ignored: Exception) {}
             isConnected = true
         } catch (e: Exception) {
             isConnected = false
@@ -121,10 +117,6 @@ class UdpVehicleClient(
             broadcastAddress?.let { bAddr ->
                 s.send(DatagramPacket(data, data.size, bAddr, port))
             }
-            try {
-                val hotspotBroadcast = InetAddress.getByName("192.168.43.255")
-                s.send(DatagramPacket(data, data.size, hotspotBroadcast, port))
-            } catch (ignored: Exception) {}
             isConnected = true
         } catch (e: Exception) {
             isConnected = false
@@ -150,12 +142,6 @@ class UdpVehicleClient(
                     socket?.receive(receivePacket)
                     lastPingMs = System.currentTimeMillis() - t0
                     isConnected = true
-
-                    // Auto-lock onto actual ESP IP address from response
-                    if (inetAddress != receivePacket.address) {
-                        inetAddress = receivePacket.address
-                        espIpAddress = receivePacket.address.hostAddress ?: espIpAddress
-                    }
                 } catch (e: Exception) {
                     lastPingMs = -1L
                 }

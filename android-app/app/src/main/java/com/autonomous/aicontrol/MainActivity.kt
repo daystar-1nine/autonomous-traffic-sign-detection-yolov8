@@ -181,8 +181,10 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         btnAutoMode.setOnClickListener {
             if (modeManager.isEmergencyStop()) {
                 modeManager.resetEmergencyStop(ControlMode.AUTONOMOUS)
-            } else {
+            } else if (!modeManager.isAutonomous()) {
                 modeManager.setAutonomousMode(isCameraPipelineReady, "Auto Button Tapped")
+            } else {
+                toggleAutoRunStandby()
             }
         }
 
@@ -257,16 +259,15 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                     btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
                 }
                 ControlMode.AUTONOMOUS -> {
-                    isAutonomousRunning = false
+                    isAutonomousRunning = true
                     btnAutoToggleRun.visibility = View.VISIBLE
                     updateAutoToggleUi()
                     tvModeIndicator.text = "[MODE: AUTONOMOUS AI]"
                     tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
-                    tvCurrentAction.text = "AUTO: [STANDBY - 0 PWM] Press START or B to Drive"
-                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_yellow))
+                    tvCurrentAction.text = "AUTO ACTIVE: AI MISSION IN PROGRESS"
+                    tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
                     btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_cyan))
                     btnManualMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
-                    udpClient.sendCommand("STOP", 0)
                 }
                 ControlMode.EMERGENCY_STOP -> {
                     isAutonomousRunning = false
