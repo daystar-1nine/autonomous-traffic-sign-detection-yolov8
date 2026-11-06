@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.Surface
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -140,12 +141,21 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
             Toast.makeText(this, "Model Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
 
-        manualRotationOffset = getSharedPreferences("ai_car_prefs", MODE_PRIVATE).getInt("cam_rotation_offset", 0)
+        // Reset camera rotation offset to 0 by default to prevent stuck 90-degree sideways orientation
+        manualRotationOffset = 0
+        getSharedPreferences("ai_car_prefs", MODE_PRIVATE).edit().putInt("cam_rotation_offset", 0).apply()
 
         tvInference.setOnClickListener {
             manualRotationOffset = (manualRotationOffset + 90) % 360
             getSharedPreferences("ai_car_prefs", MODE_PRIVATE).edit().putInt("cam_rotation_offset", manualRotationOffset).apply()
-            Toast.makeText(this, "Camera Calibration Offset: +${manualRotationOffset}°", Toast.LENGTH_SHORT).show()
+            val orientLabel = when (manualRotationOffset) {
+                0 -> "0° [Normal Landscape]"
+                90 -> "90° [Portrait]"
+                180 -> "180° [Reverse Landscape]"
+                270 -> "270° [Inverted]"
+                else -> "${manualRotationOffset}°"
+            }
+            Toast.makeText(this, "Camera Orientation: $orientLabel", Toast.LENGTH_SHORT).show()
         }
 
         setupButtons()
@@ -477,7 +487,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
-            val targetRot = previewView.display?.rotation ?: windowManager.defaultDisplay.rotation
+            val targetRot = previewView.display?.rotation ?: Surface.ROTATION_90
 
             val preview = Preview.Builder()
                 .setTargetRotation(targetRot)
@@ -560,7 +570,14 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
         runOnUiThread {
             overlayView.setResults(detections, decision)
             tvFps.text = "FPS: ${"%.1f".format(fps)}"
-            tvInference.text = "AI: ${dtInference}ms | ORIENT: +${manualRotationOffset}° [Tap to Fix]"
+            val orientDesc = when (manualRotationOffset) {
+                0 -> "0° [UPRIGHT]"
+                90 -> "90° [PORTRAIT]"
+                180 -> "180° [REV-LAND]"
+                270 -> "270° [INVERTED]"
+                else -> "${manualRotationOffset}°"
+            }
+            tvInference.text = "AI: ${dtInference}ms | ORIENT: $orientDesc [Tap]"
 
             val pingText = if (udpClient.isConnected) "${udpClient.lastPingMs}ms" else "DISCONNECTED"
             tvCarStatus.text = "CAR UDP: $pingText"
