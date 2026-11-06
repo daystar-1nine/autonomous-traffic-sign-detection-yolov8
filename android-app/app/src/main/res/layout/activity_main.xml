@@ -180,7 +180,7 @@
             android:id="@+id/tvGamepadLegend"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="GAMEPAD KEYS:\n[START / B] Auto Run / Pause\n[A] Manual Mode   [X] E-STOP\n[L1] Speed Profile [Y] Cruise"
+            android:text="GAMEPAD KEYS:\n[B / START] Auto Mode\n[A] Manual Mode   [X] E-STOP\n[L1] Speed Profile [Y] Cruise"
             android:textColor="@color/hud_cyan"
             android:textSize="9sp" />
     </LinearLayout>
@@ -252,18 +252,6 @@
             android:textColor="@color/black"
             android:textSize="10sp"
             android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btnAutoToggleRun"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:layout_marginEnd="6dp"
-            android:text="⏸ STANDBY [B/START]"
-            android:backgroundTint="@color/hud_orange"
-            android:textColor="@color/black"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
 
         <Button
             android:id="@+id/btnEmergencyStop"
