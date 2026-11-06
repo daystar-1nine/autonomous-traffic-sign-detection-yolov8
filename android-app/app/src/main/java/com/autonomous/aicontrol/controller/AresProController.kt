@@ -10,6 +10,7 @@ import kotlin.math.abs
 enum class ControllerButtonAction {
     ENABLE_MANUAL,
     ENABLE_AUTONOMOUS,
+    TOGGLE_AUTONOMOUS_RUN,
     EMERGENCY_STOP,
     CYCLE_SPEED_PROFILE,
     DECREASE_SPEED,
@@ -72,6 +73,8 @@ class AresProController(
     var keycodeCruiseControl: Int = KeyEvent.KEYCODE_BUTTON_Y
     var keycodeSpeedProfileCycle: Int = KeyEvent.KEYCODE_BUTTON_L1
     var keycodeTurboBoost: Int = KeyEvent.KEYCODE_BUTTON_R1
+    var keycodeStartButton: Int = KeyEvent.KEYCODE_BUTTON_START
+    var keycodeSelectButton: Int = KeyEvent.KEYCODE_BUTTON_SELECT
 
     init {
         inputManager.registerInputDeviceListener(this, null)
@@ -176,10 +179,13 @@ class AresProController(
             keycodeAutonomousMode -> {
                 listener?.onButtonActionTriggered(ControllerButtonAction.ENABLE_AUTONOMOUS)
             }
+            keycodeStartButton, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_BUTTON_MODE -> {
+                listener?.onButtonActionTriggered(ControllerButtonAction.TOGGLE_AUTONOMOUS_RUN)
+            }
             keycodeCruiseControl -> {
                 listener?.onButtonActionTriggered(ControllerButtonAction.TOGGLE_CRUISE_CONTROL)
             }
-            keycodeSpeedProfileCycle -> {
+            keycodeSpeedProfileCycle, keycodeSelectButton -> {
                 listener?.onButtonActionTriggered(ControllerButtonAction.CYCLE_SPEED_PROFILE)
             }
             keycodeTurboBoost -> {
@@ -209,11 +215,28 @@ class AresProController(
         return true
     }
 
-    private fun isGamepadEvent(event: KeyEvent): Boolean {
+    fun isGamepadEvent(event: KeyEvent): Boolean {
         val source = event.source
-        return ((source and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-                (source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK ||
-                KeyEvent.isGamepadButton(event.keyCode))
+        val isControllerSource = ((source and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+                (source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)
+
+        return isControllerSource ||
+                KeyEvent.isGamepadButton(event.keyCode) ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_START ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_SELECT ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_A ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_B ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_X ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_Y ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_L1 ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_R1 ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_L2 ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_R2 ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBL ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBR ||
+                event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE ||
+                event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY
     }
 
     private fun applyDeadband(value: Float): Float {

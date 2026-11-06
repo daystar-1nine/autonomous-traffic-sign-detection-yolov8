@@ -205,14 +205,17 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
         isAutonomousRunning = !isAutonomousRunning
         triggerHapticAlert()
+        updateAutoToggleUi()
+    }
 
+    private fun updateAutoToggleUi() {
         runOnUiThread {
             if (isAutonomousRunning) {
-                btnAutoToggleRun.text = "⏸ STANDBY"
+                btnAutoToggleRun.text = "⏸ STANDBY [B/START]"
                 btnAutoToggleRun.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_orange))
                 Toast.makeText(this, "Mission STARTED (Autonomous Active)", Toast.LENGTH_SHORT).show()
             } else {
-                btnAutoToggleRun.text = "▶ START"
+                btnAutoToggleRun.text = "▶ START [B/START]"
                 btnAutoToggleRun.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_green))
                 udpClient.sendCommand("STOP", 0)
                 Toast.makeText(this, "Mission on STANDBY (Motors Stopped)", Toast.LENGTH_SHORT).show()
@@ -236,11 +239,10 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 ControlMode.AUTONOMOUS -> {
                     isAutonomousRunning = false
                     btnAutoToggleRun.visibility = View.VISIBLE
-                    btnAutoToggleRun.text = "▶ START"
-                    btnAutoToggleRun.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_green))
+                    updateAutoToggleUi()
                     tvModeIndicator.text = "[MODE: AUTONOMOUS AI]"
                     tvModeIndicator.setTextColor(ContextCompat.getColor(this, R.color.hud_cyan))
-                    tvCurrentAction.text = "AUTO: [STANDBY - MOTORS OFF] TAP START TO DRIVE"
+                    tvCurrentAction.text = "AUTO: [STANDBY - 0 PWM] Press START or B to Drive"
                     tvCurrentAction.setTextColor(ContextCompat.getColor(this, R.color.hud_yellow))
                     btnAutoMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_cyan))
                     btnManualMode.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_gray))
@@ -262,7 +264,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     private fun updateProfileUi(profile: SpeedProfile) {
         runOnUiThread {
-            tvSpeedProfile.text = "PROFILE: ${profile.displayName} [Press Y / Tap to Cycle]"
+            tvSpeedProfile.text = "PROFILE: ${profile.displayName} [Press L1 / Tap to Cycle]"
         }
     }
 
@@ -277,8 +279,14 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
-            if (aresController.handleKeyDown(event.keyCode, event)) {
-                return true
+            if (event.repeatCount == 0) {
+                if (aresController.handleKeyDown(event.keyCode, event)) {
+                    return true
+                }
+            } else {
+                if (aresController.isGamepadEvent(event)) {
+                    return true
+                }
             }
         } else if (event.action == KeyEvent.ACTION_UP) {
             if (aresController.handleKeyUp(event.keyCode, event)) {
@@ -363,31 +371,61 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                     modeManager.setManualMode(aresController.isConnected(), "Gamepad Button A")
                 }
                 triggerHapticAlert()
+                showButtonFeedback("🎮 Gamepad [A]: MANUAL MODE ACTIVE")
             }
             ControllerButtonAction.ENABLE_AUTONOMOUS -> {
                 if (modeManager.isEmergencyStop()) {
                     modeManager.resetEmergencyStop(ControlMode.AUTONOMOUS)
-                } else {
+                    showButtonFeedback("🎮 Gamepad [B]: E-STOP Reset -> AUTO STANDBY")
+                } else if (!modeManager.isAutonomous()) {
                     modeManager.setAutonomousMode(isCameraPipelineReady, "Gamepad Button B")
+                    showButtonFeedback("🎮 Gamepad [B]: AUTO MODE (Press [B] or [START] to Drive)")
+                } else {
+                    // Already in autonomous mode! Double press / toggle START or STANDBY!
+                    toggleAutoRunStandby()
+                    val state = if (isAutonomousRunning) "AUTO RUNNING ▶" else "AUTO STANDBY ⏸"
+                    showButtonFeedback("🎮 Gamepad [B]: $state")
+                }
+                triggerHapticAlert()
+            }
+            ControllerButtonAction.TOGGLE_AUTONOMOUS_RUN -> {
+                if (modeManager.isEmergencyStop()) {
+                    modeManager.resetEmergencyStop(ControlMode.AUTONOMOUS)
+                    isAutonomousRunning = true
+                    updateAutoToggleUi()
+                    showButtonFeedback("🎮 Gamepad [START]: E-STOP Reset -> AUTO RUNNING ▶")
+                } else if (!modeManager.isAutonomous()) {
+                    modeManager.setAutonomousMode(isCameraPipelineReady, "Gamepad START Button")
+                    isAutonomousRunning = true
+                    updateAutoToggleUi()
+                    showButtonFeedback("🎮 Gamepad [START]: AUTO MODE STARTED ▶")
+                } else {
+                    toggleAutoRunStandby()
+                    val state = if (isAutonomousRunning) "AUTO RUNNING ▶" else "AUTO STANDBY ⏸"
+                    showButtonFeedback("🎮 Gamepad [START]: $state")
                 }
                 triggerHapticAlert()
             }
             ControllerButtonAction.EMERGENCY_STOP -> {
                 modeManager.triggerEmergencyStop("Gamepad Button X Pressed")
                 triggerHapticAlert()
+                showButtonFeedback("🎮 Gamepad [X]: EMERGENCY STOP ENGAGED!")
             }
             ControllerButtonAction.CYCLE_SPEED_PROFILE -> {
                 val newProfile = differentialDrive.cycleSpeedProfile()
                 updateProfileUi(newProfile)
-                Toast.makeText(this, "Profile: ${newProfile.displayName}", Toast.LENGTH_SHORT).show()
+                showButtonFeedback("🎮 Gamepad [L1]: Profile -> ${newProfile.displayName}")
                 triggerHapticAlert()
             }
             ControllerButtonAction.TOGGLE_CRUISE_CONTROL -> {
                 if (modeManager.isAutonomous()) {
                     toggleAutoRunStandby()
+                    val state = if (isAutonomousRunning) "AUTO RUNNING ▶" else "AUTO STANDBY ⏸"
+                    showButtonFeedback("🎮 Gamepad [Y]: $state")
                 } else {
                     val active = differentialDrive.toggleCruiseControl()
-                    Toast.makeText(this, if (active) "Cruise Control ENGAGED [Speed Locked]" else "Cruise Control CANCELLED", Toast.LENGTH_SHORT).show()
+                    val msg = if (active) "🎮 Gamepad [Y]: Cruise Control LOCKED" else "🎮 Gamepad [Y]: Cruise Control OFF"
+                    showButtonFeedback(msg)
                     triggerHapticAlert()
                 }
             }
@@ -403,6 +441,13 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                 )
                 updateProfileUi(newProfile)
             }
+        }
+    }
+
+    private fun showButtonFeedback(message: String) {
+        runOnUiThread {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            tvDiagButtons.text = message
         }
     }
 
@@ -592,7 +637,7 @@ class MainActivity : AppCompatActivity(), ControllerEventListener, ControlModeLi
                         else ContextCompat.getColor(this, R.color.hud_cyan)
                     )
                 } else {
-                    tvCurrentAction.text = "AUTO: [STANDBY - MOTORS OFF] TAP START TO DRIVE"
+                    tvCurrentAction.text = "AUTO: [STANDBY - 0 PWM] Press START or B to Drive"
                     val detectedText = if (detections.isNotEmpty()) "${detections[0].className.uppercase()} (${(detections[0].confidence*100).toInt()}%)" else "ROAD CLEAR"
                     tvSignInfo.text = "VISION: $detectedText | TARGET: ${decision.targetSignName.uppercase()} (READY)"
                     tvMotorOutputs.text = "AUTO MOTOR: STANDBY (0 PWM)"
