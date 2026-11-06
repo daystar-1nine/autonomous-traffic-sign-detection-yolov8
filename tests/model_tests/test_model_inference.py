@@ -48,27 +48,26 @@ def test_model_loading_and_inference():
         assert cls_id == 5, f"Expected class 5 (stop), got {cls_id}"
         print(f" [PASS] Sample stop sign correctly detected with confidence: {conf:.2%}")
 
-    # 3. Test Directional Left Turn distinction (Class 0)
-    left_img = Path("crop_class_0_left_turn.jpg")
-    if left_img.is_file():
-        res = model.predict(source=str(left_img), conf=0.5, verbose=False)[0]
-        assert len(res.boxes) > 0, "Failed to detect left turn crop"
-        cls_id = int(res.boxes[0].cls[0].item())
-        conf = float(res.boxes[0].conf[0].item())
-        assert cls_id == 0, f"Expected class 0 (left_turn), got {cls_id}"
-        print(f" [PASS] Left turn sign correctly classified as class 0 ({conf:.2%})")
+    # 3. Test All 6 Standard Sign Classes (0 to 5)
+    class_targets = [
+        (0, "crop_class_0_left_turn.jpg", "left_turn"),
+        (1, "crop_class_1_straight_ahead.jpg", "straight_ahead"),
+        (2, "crop_class_2_right_turn.jpg", "right_turn"),
+        (3, "crop_class_3_dead_end.jpg", "dead_end"),
+        (4, "crop_class_4_no_entry.jpg", "no_entry"),
+        (5, "crop_class_5_stop.jpg", "stop")
+    ]
+    for expected_id, filename, expected_name in class_targets:
+        img_p = Path(filename)
+        if img_p.is_file():
+            res = model.predict(source=str(img_p), conf=0.4, verbose=False)[0]
+            assert len(res.boxes) > 0, f"Failed to detect {expected_name} crop ({filename})"
+            cls_id = int(res.boxes[0].cls[0].item())
+            conf = float(res.boxes[0].conf[0].item())
+            assert cls_id == expected_id, f"Expected class {expected_id} ({expected_name}), got {cls_id} ({model.names[cls_id]})"
+            print(f" [PASS] Class {expected_id} ({expected_name}) correctly detected with {conf:.2%} confidence.")
 
-    # 4. Test Directional Right Turn distinction (Class 2)
-    right_img = Path("crop_class_2_right_turn.jpg")
-    if right_img.is_file():
-        res = model.predict(source=str(right_img), conf=0.5, verbose=False)[0]
-        assert len(res.boxes) > 0, "Failed to detect right turn crop"
-        cls_id = int(res.boxes[0].cls[0].item())
-        conf = float(res.boxes[0].conf[0].item())
-        assert cls_id == 2, f"Expected class 2 (right_turn), got {cls_id}"
-        print(f" [PASS] Right turn sign correctly classified as class 2 ({conf:.2%})")
-
-    # 5. Test Real Stop Sign detection (05_PYTHON_TOOLS/test_images/stop_sign.jpg)
+    # 4. Test Real Stop Sign detection (05_PYTHON_TOOLS/test_images/stop_sign.jpg)
     real_stop = Path("05_PYTHON_TOOLS/test_images/stop_sign.jpg")
     if real_stop.is_file():
         res = model.predict(source=str(real_stop), conf=0.5, verbose=False)[0]
