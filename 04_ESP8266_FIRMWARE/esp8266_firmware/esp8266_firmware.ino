@@ -34,8 +34,8 @@
 #define PIN_D7  13 // GPIO 13 (Profile A PWMB / Profile B BIN1)
 #define PIN_D8  15 // GPIO 15 (Profile A STBY / Boot pulldown)
 
-// Active Pinout Profile: 0 = Profile A (Standard/Original), 1 = Profile B (Alternate)
-int activeProfile = 0; 
+// Active Pinout Profile: 0 = Profile A (Standard/Original), 1 = Profile B (Alternate / User Hardware)
+int activeProfile = 1; // Default to Profile B (User's Exact Hardware Wiring)
 #define EEPROM_ADDR_PROFILE 0
 
 // ==================================================
@@ -312,7 +312,7 @@ void setup() {
   if (saved == 0 || saved == 1) {
     activeProfile = saved;
   } else {
-    activeProfile = 0; // Default: Profile A (Standard)
+    activeProfile = 1; // Default: Profile B (User's Exact Hardware Wiring)
   }
   Serial.printf("[CONFIG] Active Motor Pinout Profile: %s\n", activeProfile == 0 ? "A (Standard)" : "B (Alternate)");
 

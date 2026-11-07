@@ -6,7 +6,7 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 
 class UdpVehicleClient(
-    var espIpAddress: String = "192.168.4.1",
+    private val espIpAddress: String = "192.168.4.1",
     private val port: Int = 8888
 ) {
     private var socket: DatagramSocket? = null
@@ -41,17 +41,6 @@ class UdpVehicleClient(
             startHeartbeatAndReceiver()
         } catch (e: Exception) {
             e.printStackTrace()
-        }
-    }
-
-    fun setTargetIp(newIp: String) {
-        scope.launch {
-            try {
-                espIpAddress = newIp.trim()
-                inetAddress = InetAddress.getByName(espIpAddress)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 
