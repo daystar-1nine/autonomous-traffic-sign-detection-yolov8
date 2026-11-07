@@ -1,45 +1,49 @@
 /*  
  * ==============================================================================
- *  AI Autonomous Car: Standalone Single-File Arduino IDE Firmware (v2.2)
+ *  AI Autonomous Car: Standalone Single-File Arduino IDE Firmware (v2.3 Universal)
  * ==============================================================================
  *  DUAL MODE: Cosmic Byte Ares Pro Manual Driving + Autonomous AI Vision
- *  CONFIGURED SPECIFICALLY FOR YOUR EXACT PHYSICAL WIRING:
- *    Motor A (Left) : AIN1 = D1, AIN2 = D2, PWMA = D5
- *    Motor B (Right): BIN1 = D7, BIN2 = D4, PWMB = D6
- *    Standby        : STBY = D0
+ *  UNIVERSAL HARDWARE PINOUT ENGINE (Includes Built-in Mobile Test & Diagnostics):
+ *    - Profile A (Standard / Original Wiring):
+ *        PWMA = D1 (GPIO 5), AIN1 = D2 (GPIO 4), AIN2 = D3 (GPIO 0)
+ *        BIN1 = D5 (GPIO 14), BIN2 = D6 (GPIO 12), PWMB = D7 (GPIO 13)
+ *        STBY = D8 (GPIO 15)
+ *    - Profile B (Alternate Wiring):
+ *        AIN1 = D1 (GPIO 5), AIN2 = D2 (GPIO 4), PWMA = D5 (GPIO 14)
+ *        BIN1 = D7 (GPIO 13), BIN2 = D4 (GPIO 2), PWMB = D6 (GPIO 12)
+ *        STBY = D0 (GPIO 16)
+ *    - Failsafe: BOTH D8 AND D0 are always driven HIGH for Standby enable.
  * ==============================================================================
  */
 
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ESP8266WebServer.h>
+#include <EEPROM.h>
 
 // ==================================================
-// 1. PIN CONFIGURATION (EXACT MATCH TO YOUR WIRING)
+// 1. PIN DEFINITIONS (NODE MCU GPIO ALIASES)
 // ==================================================
+#define PIN_D0  16 // GPIO 16 (WAKE / Profile B STBY)
+#define PIN_D1  5  // GPIO 5  (Profile A PWMA / Profile B AIN1)
+#define PIN_D2  4  // GPIO 4  (Profile A AIN1 / Profile B AIN2)
+#define PIN_D3  0  // GPIO 0  (Profile A AIN2 / Flash)
+#define PIN_D4  2  // GPIO 2  (Profile B BIN2 / Blue LED)
+#define PIN_D5  14 // GPIO 14 (Profile A BIN1 / Profile B PWMA)
+#define PIN_D6  12 // GPIO 12 (Profile A BIN2 / Profile B PWMB)
+#define PIN_D7  13 // GPIO 13 (Profile A PWMB / Profile B BIN1)
+#define PIN_D8  15 // GPIO 15 (Profile A STBY / Boot pulldown)
 
-// Motor A - Left
-#define PIN_AIN1  5   // D1 (GPIO 5)  - Direction 1
-#define PIN_AIN2  4   // D2 (GPIO 4)  - Direction 2
-#define PIN_PWMA  14  // D5 (GPIO 14) - Speed (PWM)
-
-// Motor B - Right
-#define PIN_BIN1  13  // D7 (GPIO 13) - Direction 1
-#define PIN_BIN2  2   // D4 (GPIO 2)  - Direction 2
-#define PIN_PWMB  12  // D6 (GPIO 12) - Speed (PWM)
-
-// Standby Pin
-#define PIN_STBY  16  // D0 (GPIO 16) - Active HIGH
+// Active Pinout Profile: 0 = Profile A (Standard/Original), 1 = Profile B (Alternate)
+int activeProfile = 0; 
+#define EEPROM_ADDR_PROFILE 0
 
 // ==================================================
 // 2. DUAL-WIFI CONFIGURATION (HOTSPOT + SOFT-AP)
 // ==================================================
-
-// Phone Hotspot Credentials (from your working code)
 const char* STA_SSID     = "Kunal@Bsnl";
 const char* STA_PASSWORD = "Kunal@646";
 
-// Standalone Fallback Access Point (Direct Car Hotspot)
 const char* AP_SSID      = "AutonomousCar_AP";
 const char* AP_PASSWORD  = "car12345678";
 
@@ -52,12 +56,13 @@ ESP8266WebServer server(80);
 // ==================================================
 // 3. MOTOR SPEED & STATE VARIABLES
 // ==================================================
-
 int currentTargetSpeed = 700;
 int motorTrim = 0;
 String currentAction = "STOP";
 unsigned long lastHeartbeat = 0;
 const unsigned long WATCHDOG_TIMEOUT_MS = 1000;
+unsigned long totalPacketsReceived = 0;
+String lastPacketMsg = "NONE";
 
 // HTTP Movement Duration Tracker
 bool httpMovementActive = false;
@@ -67,6 +72,11 @@ unsigned long httpDuration = 1000;
 // ==================================================
 // 4. LOW-LEVEL MOTOR HARDWARE ACTUATION
 // ==================================================
+
+void setStandbyHigh() {
+  digitalWrite(PIN_D8, HIGH); // Standby for Profile A
+  digitalWrite(PIN_D0, HIGH); // Standby for Profile B
+}
 
 void applyMotors(int leftSpeed, bool leftFwd, int rightSpeed, bool rightFwd) {
   int adjLeft = leftSpeed;
@@ -78,15 +88,31 @@ void applyMotors(int leftSpeed, bool leftFwd, int rightSpeed, bool rightFwd) {
   adjLeft = constrain(adjLeft, 0, 1023);
   adjRight = constrain(adjRight, 0, 1023);
 
-  digitalWrite(PIN_AIN1, leftFwd ? HIGH : LOW);
-  digitalWrite(PIN_AIN2, leftFwd ? LOW : HIGH);
-  analogWrite(PIN_PWMA, adjLeft);
+  setStandbyHigh();
 
-  digitalWrite(PIN_BIN1, rightFwd ? HIGH : LOW);
-  digitalWrite(PIN_BIN2, rightFwd ? LOW : HIGH);
-  analogWrite(PIN_PWMB, adjRight);
+  if (activeProfile == 0) {
+    // ---------------- PROFILE A (Standard / Original) ----------------
+    // Left Motor (Motor A): PWMA = D1, AIN1 = D2, AIN2 = D3
+    digitalWrite(PIN_D2, leftFwd ? HIGH : LOW);
+    digitalWrite(PIN_D3, leftFwd ? LOW : HIGH);
+    analogWrite(PIN_D1, adjLeft);
 
-  digitalWrite(PIN_STBY, HIGH);
+    // Right Motor (Motor B): BIN1 = D5, BIN2 = D6, PWMB = D7
+    digitalWrite(PIN_D5, rightFwd ? HIGH : LOW);
+    digitalWrite(PIN_D6, rightFwd ? LOW : HIGH);
+    analogWrite(PIN_D7, adjRight);
+  } else {
+    // ---------------- PROFILE B (Alternate) --------------------------
+    // Left Motor (Motor A): AIN1 = D1, AIN2 = D2, PWMA = D5
+    digitalWrite(PIN_D1, leftFwd ? HIGH : LOW);
+    digitalWrite(PIN_D2, leftFwd ? LOW : HIGH);
+    analogWrite(PIN_D5, adjLeft);
+
+    // Right Motor (Motor B): BIN1 = D7, BIN2 = D4, PWMB = D6
+    digitalWrite(PIN_D7, rightFwd ? HIGH : LOW);
+    digitalWrite(PIN_D4, rightFwd ? LOW : HIGH);
+    analogWrite(PIN_D6, adjRight);
+  }
 }
 
 void driveDirect(int leftPwm, int rightPwm) {
@@ -102,13 +128,18 @@ void driveDirect(int leftPwm, int rightPwm) {
 }
 
 void stopCar() {
-  analogWrite(PIN_PWMA, 0);
-  analogWrite(PIN_PWMB, 0);
-  digitalWrite(PIN_AIN1, LOW);
-  digitalWrite(PIN_AIN2, LOW);
-  digitalWrite(PIN_BIN1, LOW);
-  digitalWrite(PIN_BIN2, LOW);
-  digitalWrite(PIN_STBY, HIGH);
+  // Stop all PWM lines
+  analogWrite(PIN_D1, 0);
+  analogWrite(PIN_D5, 0);
+  analogWrite(PIN_D6, 0);
+  analogWrite(PIN_D7, 0);
+
+  // Set direction lines low
+  digitalWrite(PIN_D2, LOW);
+  digitalWrite(PIN_D3, LOW);
+  digitalWrite(PIN_D4, LOW);
+
+  setStandbyHigh();
 
   currentAction = "STOP";
   currentTargetSpeed = 0;
@@ -139,17 +170,89 @@ void executeCommand(String action, int speed, int trim) {
 }
 
 // ==================================================
-// 5. HTTP WEB SERVER HANDLERS (BACKWARD COMPATIBLE)
+// 5. DIAGNOSTIC MOBILE WEB DASHBOARD (PORT 80)
 // ==================================================
 
 void handleRoot() {
-  String msg = "AUTONOMOUS CAR ONLINE (DUAL-MODE v2.2)\n";
-  msg += "STA IP (Hotspot): " + (WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : "DISCONNECTED") + "\n";
-  msg += "SoftAP IP: " + WiFi.softAPIP().toString() + "\n";
-  msg += "Current Command: " + currentAction + "\n";
-  msg += "Motor Speed: " + String(currentTargetSpeed) + "\n";
-  msg += "Uptime: " + String(millis() / 1000) + "s\n";
-  server.send(200, "text/plain", msg);
+  String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<title>Autonomous Car Diagnostics</title>";
+  html += "<style>";
+  html += "body{background:#0F172A;color:#F8FAFC;font-family:sans-serif;margin:0;padding:16px;text-align:center;}";
+  html += "h1{color:#38BDF8;font-size:22px;margin-bottom:4px;}";
+  html += ".card{background:#1E293B;border:2px solid #334155;border-radius:12px;padding:14px;margin-bottom:14px;text-align:left;}";
+  html += ".btn{display:block;width:100%;box-sizing:border-box;background:#0284C7;color:#fff;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:bold;margin:8px 0;cursor:pointer;text-decoration:none;text-align:center;}";
+  html += ".btn-green{background:#16A34A;}.btn-red{background:#DC2626;}.btn-orange{background:#D97706;}.btn-purple{background:#9333EA;}";
+  html += ".status-val{color:#4ADE80;font-weight:bold;}";
+  html += ".badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:bold;background:#38BDF8;color:#000;}";
+  html += "</style></head><body>";
+
+  html += "<h1>🚗 AI CAR HARDWARE DASHBOARD</h1>";
+  html += "<p style='color:#94A3B8;font-size:13px;margin-top:0;'>Firmware v2.3 Universal Engine</p>";
+
+  // Profile Card
+  html += "<div class='card'>";
+  html += "<div><strong>Active Motor Pinout: </strong><span class='badge'>";
+  html += (activeProfile == 0) ? "PROFILE A (Standard: D1,D2,D3,D5,D6,D7,D8)" : "PROFILE B (Alternate: D5,D1,D2,D6,D7,D4,D0)";
+  html += "</span></div><br>";
+  html += "<div>Current State: <span class='status-val'>" + currentAction + " (" + String(currentTargetSpeed) + " PWM)</span></div>";
+  html += "<div>Last UDP Packet: <span class='status-val'>" + lastPacketMsg + "</span></div>";
+  html += "<div>Total UDP Packets: <span class='status-val'>" + String(totalPacketsReceived) + "</span></div>";
+  html += "<div>Uptime: <span class='status-val'>" + String(millis()/1000) + "s</span></div>";
+  html += "</div>";
+
+  // Motor Diagnostic Action Buttons
+  html += "<div class='card'>";
+  html += "<h3 style='margin-top:0;color:#FCD34D;'>⚡ 1-Tap Motor Spin Tests:</h3>";
+  html += "<a href='/test_profile?p=0' class='btn btn-green'>▶ TEST PROFILE A (Standard 3s Forward)</a>";
+  html += "<a href='/test_profile?p=1' class='btn btn-purple'>▶ TEST PROFILE B (Alternate 3s Forward)</a>";
+  html += "<a href='/set_profile?p=0' class='btn btn-orange'>💾 SAVE PROFILE A AS PERMANENT DEFAULT</a>";
+  html += "<a href='/set_profile?p=1' class='btn btn-orange'>💾 SAVE PROFILE B AS PERMANENT DEFAULT</a>";
+  html += "<a href='/stop' class='btn btn-red'>🛑 EMERGENCY STOP MOTORS</a>";
+  html += "</div>";
+
+  // Battery Troubleshooting Checklist
+  html += "<div class='card' style='font-size:13px;line-height:1.5;'>";
+  html += "<h3 style='margin-top:0;color:#38BDF8;'>🔋 Agar Pahiya Abhi Bhi Na Ghume:</h3>";
+  html += "<ol style='padding-left:18px;margin:0;'>";
+  html += "<li><strong>Battery Switch:</strong> 18650 Battery holder se LM2596 `IN+` aur TB6612 `VM` ka switch <strong>ON</strong> hona chahiye.</li>";
+  html += "<li><strong>VM Power Check:</strong> TB6612 ke `VM` pin par 7.4V milna zaroori hai (USB cable se sirf ESP chalta hai, motor nahi).</li>";
+  html += "<li><strong>STBY Pin:</strong> TB6612 ka `STBY` pin HIGH hona chahiye. (Humne D8 aur D0 dono ko HIGH rakha hai).</li>";
+  html += "<li><strong>Common Ground:</strong> Battery (-), NodeMCU GND, aur TB6612 GND aapas me jude hone chahiye.</li>";
+  html += "</ol>";
+  html += "</div>";
+
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void handleTestProfile() {
+  if (server.hasArg("p")) {
+    activeProfile = server.arg("p").toInt();
+  }
+  executeCommand("FORWARD", 850, 0);
+  httpMovementActive = true;
+  httpStartTime = millis();
+  httpDuration = 3000; // 3 seconds forward spin test
+  lastHeartbeat = millis();
+
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleSetProfile() {
+  if (server.hasArg("p")) {
+    activeProfile = server.arg("p").toInt();
+    EEPROM.write(EEPROM_ADDR_PROFILE, activeProfile);
+    EEPROM.commit();
+  }
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleStop() {
+  stopCar();
+  server.sendHeader("Location", "/");
+  server.send(303);
 }
 
 void handleHttpCommand() {
@@ -187,7 +290,7 @@ void handleHttpCommand() {
   httpStartTime = millis();
   httpDuration = duration;
 
-  server.send(200, "text/plain", "ACK:" + cmd + ":RUNNING");
+  server.send(200, "text/plain", "ACK:" + cmd + ":RUNNING [Profile " + (activeProfile==0 ? "A" : "B") + "]");
 }
 
 // ==================================================
@@ -199,24 +302,36 @@ void setup() {
   delay(200);
 
   Serial.println("\n\n==============================================");
-  Serial.println("  AI AUTONOMOUS CAR DUAL-MODE FIRMWARE v2.2   ");
-  Serial.println("  CONFIGURED FOR YOUR PHYSICAL HARDWARE PINS  ");
+  Serial.println("  AI AUTONOMOUS CAR UNIVERSAL FIRMWARE v2.3   ");
+  Serial.println("  SUPPORTING DUAL PINOUTS (A & B) + WEB DIAG  ");
   Serial.println("==============================================");
 
-  pinMode(PIN_AIN1, OUTPUT);
-  pinMode(PIN_AIN2, OUTPUT);
-  pinMode(PIN_PWMA, OUTPUT);
+  // Initialize EEPROM and read saved profile
+  EEPROM.begin(64);
+  byte saved = EEPROM.read(EEPROM_ADDR_PROFILE);
+  if (saved == 0 || saved == 1) {
+    activeProfile = saved;
+  } else {
+    activeProfile = 0; // Default: Profile A (Standard)
+  }
+  Serial.printf("[CONFIG] Active Motor Pinout Profile: %s\n", activeProfile == 0 ? "A (Standard)" : "B (Alternate)");
 
-  pinMode(PIN_BIN1, OUTPUT);
-  pinMode(PIN_BIN2, OUTPUT);
-  pinMode(PIN_PWMB, OUTPUT);
-
-  pinMode(PIN_STBY, OUTPUT);
+  // Initialize all potential motor and standby pins as OUTPUT
+  pinMode(PIN_D0, OUTPUT);
+  pinMode(PIN_D1, OUTPUT);
+  pinMode(PIN_D2, OUTPUT);
+  pinMode(PIN_D3, OUTPUT);
+  pinMode(PIN_D4, OUTPUT);
+  pinMode(PIN_D5, OUTPUT);
+  pinMode(PIN_D6, OUTPUT);
+  pinMode(PIN_D7, OUTPUT);
+  pinMode(PIN_D8, OUTPUT);
 
   analogWriteRange(1023);
   analogWriteFreq(1000);
 
-  digitalWrite(PIN_STBY, HIGH);
+  // Guarantee Standby is HIGH on both D8 and D0
+  setStandbyHigh();
   stopCar();
 
   // Dual Wi-Fi Mode: Both Station (Phone Hotspot) AND SoftAP (Direct)
@@ -248,11 +363,14 @@ void setup() {
   udp.begin(UDP_PORT);
   Serial.printf("[UDP] Listening on Port %u\n", UDP_PORT);
 
-  // 4. HTTP Web Server Handlers
+  // 4. Diagnostic Web Server Handlers
   server.on("/", HTTP_GET, handleRoot);
   server.on("/cmd", HTTP_GET, handleHttpCommand);
+  server.on("/test_profile", HTTP_GET, handleTestProfile);
+  server.on("/set_profile", HTTP_GET, handleSetProfile);
+  server.on("/stop", HTTP_GET, handleStop);
   server.on("/ping", HTTP_GET, []() {
-    server.send(200, "text/plain", "PONG | Uptime: " + String(millis()/1000) + "s");
+    server.send(200, "text/plain", "PONG | Profile: " + String(activeProfile == 0 ? "A" : "B") + " | Uptime: " + String(millis()/1000) + "s");
   });
   server.begin();
   Serial.println("[HTTP] Web Server Started on Port 80");
@@ -276,6 +394,8 @@ void loop() {
       String msg = String(packetBuffer);
       msg.trim();
       lastHeartbeat = millis();
+      totalPacketsReceived++;
+      lastPacketMsg = msg;
 
       // Direct Drive Mode: "CMD:DRIVE:<LEFT>:<RIGHT>:<SEQ>"
       if (msg.startsWith("CMD:DRIVE:")) {
